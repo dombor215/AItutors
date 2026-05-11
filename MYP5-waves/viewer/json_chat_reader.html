@@ -1,0 +1,596 @@
+<!DOCTYPE html><html lang="sk"><head><meta name="x-poe-datastore-behavior" content="local_only">
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Chat Export Viewer</title>
+<link rel="icon" type="image/svg+xml" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'%3E%3Crect width='100' height='100' rx='20' fill='%230256d1'/%3E%3Cpath d='M20 60 Q50 40 80 60 L80 75 Q50 55 20 75 Z' fill='white'/%3E%3Cpolygon points='50,20 85,35 50,50 15,35' fill='white'/%3E%3Crect x='47' y='35' width='6' height='25' fill='white'/%3E%3Ccircle cx='50' cy='65' r='4' fill='%230256d1'/%3E%3C/svg%3E">
+<script>
+window.MathJax = {
+  tex: { inlineMath: [['\\(','\\)']], displayMath: [['\\[','\\]']], processEscapes: true, processEnvironments: true },
+  options: { skipHtmlTags: ['script','noscript','style','textarea','pre','code'] }
+};
+</script>
+<script defer="" src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-chtml.js"></script>
+<style>
+:root {
+  --primary: #4A90E2;
+  --secondary: #357ABD;
+  --sidebar-w: 360px;
+  --header-h: 56px;
+  --bg: #f0f2f5;
+  --card-bg: #fff;
+  --border: #e0e0e0;
+  --text: #1a1a1a;
+  --text-secondary: #666;
+  --user-bg: #d1e7dd;
+  --bot-bg: #ffffff;
+  --system-bg: #fff9e6;
+  --radius: 12px;
+  --shadow: 0 2px 8px rgba(0,0,0,0.08);
+}
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', sans-serif; height: 100vh; display: flex; flex-direction: column; background: var(--bg); color: var(--text); overflow: hidden; }
+
+/* ===== Header ===== */
+header { height: var(--header-h); background: linear-gradient(135deg, var(--primary), var(--secondary)); color: white; display: flex; align-items: center; justify-content: space-between; padding: 0 20px; box-shadow: 0 2px 12px rgba(0,0,0,0.15); z-index: 100; flex-shrink: 0; }
+header h1 { font-size: 18px; font-weight: 700; display: flex; align-items: center; gap: 8px; }
+.header-actions { display: flex; gap: 8px; align-items: center; }
+.header-btn { background: rgba(255,255,255,0.18); color: white; border: 1px solid rgba(255,255,255,0.25); border-radius: 8px; padding: 7px 14px; font-size: 13px; font-weight: 600; cursor: pointer; transition: background 0.15s; white-space: nowrap; }
+.header-btn:hover { background: rgba(255,255,255,0.3); }
+.header-btn:disabled { opacity: 0.5; cursor: not-allowed; }
+.header-btn.danger:hover:not(:disabled) { background: rgba(231,76,60,0.7); }
+#sidebarToggle { display: none; background: none; border: none; color: white; font-size: 22px; cursor: pointer; padding: 4px 8px; }
+
+/* ===== App Body ===== */
+.app-body { flex: 1; display: flex; overflow: hidden; }
+
+/* ===== Sidebar ===== */
+.sidebar { width: var(--sidebar-w); background: var(--card-bg); border-right: 1px solid var(--border); display: flex; flex-direction: column; flex-shrink: 0; overflow: hidden; transition: transform 0.25s ease; }
+.sidebar-header { padding: 12px; border-bottom: 1px solid var(--border); }
+.sidebar-header input { width: 100%; padding: 9px 12px; border: 2px solid var(--border); border-radius: 8px; font-size: 14px; outline: none; font-family: inherit; transition: border-color 0.15s; }
+.sidebar-header input:focus { border-color: var(--primary); }
+.stats-bar { padding: 12px; border-bottom: 1px solid var(--border); display: flex; gap: 8px; flex-wrap: wrap; background: #fafbfc; }
+.stat-chip { background: white; border: 1px solid var(--border); border-radius: 8px; padding: 6px 10px; font-size: 12px; font-weight: 600; display: flex; align-items: center; gap: 4px; }
+.stat-chip .stat-num { font-size: 16px; }
+.sort-row { padding: 8px 12px; border-bottom: 1px solid var(--border); display: flex; align-items: center; gap: 8px; background: #fafbfc; }
+.sort-row label { font-size: 12px; color: var(--text-secondary); font-weight: 600; white-space: nowrap; }
+.sort-row select { flex: 1; padding: 4px 8px; border: 1px solid var(--border); border-radius: 6px; font-size: 12px; font-family: inherit; outline: none; background: white; }
+.conv-list { flex: 1; overflow-y: auto; padding: 8px; display: flex; flex-direction: column; gap: 6px; }
+
+/* Conversation card */
+.conv-card { padding: 12px; border-radius: 10px; border: 2px solid transparent; background: #fafbfc; cursor: pointer; transition: all 0.15s; position: relative; }
+.conv-card:hover { background: #eef3fa; border-color: #c5d9f0; }
+.conv-card.selected { background: #e0edff; border-color: var(--primary); }
+.conv-card .conv-name { font-size: 14px; font-weight: 600; color: var(--text); margin-bottom: 4px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.conv-card .conv-meta { font-size: 12px; color: var(--text-secondary); display: flex; gap: 12px; flex-wrap: wrap; margin-bottom: 6px; }
+.conv-card .conv-meta span { display: flex; align-items: center; gap: 3px; }
+.conv-card .conv-remove { position: absolute; top: 8px; right: 8px; background: none; border: none; color: #ccc; font-size: 14px; cursor: pointer; padding: 2px 6px; border-radius: 4px; transition: all 0.15s; line-height: 1; }
+.conv-card .conv-remove:hover { color: #e74c3c; background: #fde8e8; }
+
+/* ===== Viewer ===== */
+.viewer { flex: 1; display: flex; flex-direction: column; overflow: hidden; background: var(--bg); }
+
+/* Upload screen */
+.upload-screen { flex: 1; display: flex; align-items: center; justify-content: center; padding: 32px; }
+.upload-box { background: white; border: 3px dashed #c5d0dc; border-radius: 16px; padding: 48px; text-align: center; max-width: 520px; width: 100%; cursor: pointer; transition: all 0.2s; }
+.upload-box:hover, .upload-box.dragover { border-color: var(--primary); background: #f0f6ff; }
+.upload-box .upload-icon { font-size: 56px; margin-bottom: 16px; }
+.upload-box h2 { font-size: 20px; color: var(--text); margin-bottom: 8px; }
+.upload-box p { font-size: 14px; color: var(--text-secondary); margin-bottom: 20px; line-height: 1.5; }
+.upload-box .upload-btn-visual { display: inline-block; background: linear-gradient(135deg, var(--primary), var(--secondary)); color: white; padding: 10px 28px; border-radius: 10px; font-weight: 600; font-size: 15px; transition: opacity 0.15s; }
+.upload-box:hover .upload-btn-visual { opacity: 0.9; }
+
+/* Conversation viewer */
+.conv-viewer { flex: 1; display: flex; flex-direction: column; overflow: hidden; }
+.conv-header { padding: 16px 24px; background: white; border-bottom: 1px solid var(--border); box-shadow: 0 1px 4px rgba(0,0,0,0.04); flex-shrink: 0; }
+.conv-header h2 { font-size: 16px; font-weight: 700; color: var(--text); margin-bottom: 6px; }
+.conv-header-meta { display: flex; gap: 16px; flex-wrap: wrap; font-size: 13px; color: var(--text-secondary); align-items: center; }
+.conv-header-meta span { display: flex; align-items: center; gap: 4px; }
+.msg-scroll { flex: 1; overflow-y: auto; padding: 24px; display: flex; flex-direction: column; gap: 14px; }
+
+/* Messages */
+.msg { padding: 14px 18px; border-radius: var(--radius); max-width: 78%; box-shadow: var(--shadow); line-height: 1.6; font-size: 15px; word-wrap: break-word; animation: fadeIn 0.2s ease; }
+.msg.user-msg { background: var(--user-bg); align-self: flex-end; border-bottom-right-radius: 4px; white-space: pre-wrap; }
+.msg.bot-msg { background: var(--bot-bg); border: 1px solid var(--border); align-self: flex-start; border-bottom-left-radius: 4px; }
+.msg.system-msg { background: var(--system-bg); border: 1px solid #f0e6c0; align-self: stretch; max-width: 100%; font-size: 13px; border-radius: 8px; }
+.system-toggle { cursor: pointer; user-select: none; font-weight: 600; color: #b08c20; display: flex; align-items: center; gap: 6px; }
+.system-toggle:hover { color: #8a6d15; }
+.system-content { margin-top: 10px; max-height: 300px; overflow-y: auto; white-space: pre-wrap; color: #555; font-size: 12px; line-height: 1.5; border-top: 1px solid #efe0b0; padding-top: 10px; }
+.system-content.collapsed { display: none; }
+
+.msg-timestamp { font-size: 11px; margin-top: 8px; opacity: 0.7; user-select: none; letter-spacing: 0.2px; }
+.user-msg .msg-timestamp { text-align: right; color: #5a8a6a; }
+.bot-msg .msg-timestamp { text-align: left; color: #aaa; }
+.system-msg .msg-timestamp { text-align: left; color: #b0a060; }
+
+.msg-role { font-size: 11px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.5px; margin-bottom: 6px; opacity: 0.6; }
+
+/* Bot markdown styling */
+.bot-msg h1, .bot-msg h2, .bot-msg h3, .bot-msg h4 { margin: 14px 0 6px 0; color: var(--secondary); line-height: 1.3; }
+.bot-msg h1 { font-size: 1.4em; font-weight: 700; }
+.bot-msg h2 { font-size: 1.25em; font-weight: 700; }
+.bot-msg h3 { font-size: 1.1em; font-weight: 600; }
+.bot-msg h4 { font-size: 1em; font-weight: 600; }
+.bot-msg p { margin: 6px 0; }
+.bot-msg ul, .bot-msg ol { margin: 6px 0; padding-left: 22px; }
+.bot-msg li { margin: 3px 0; }
+.bot-msg code { background: #f4f4f4; padding: 2px 6px; border-radius: 4px; font-family: 'Courier New', monospace; font-size: 13px; color: #d63384; }
+.bot-msg pre { background: #f4f4f4; padding: 12px; border-radius: 6px; overflow-x: auto; margin: 8px 0; }
+.bot-msg pre code { background: none; padding: 0; color: inherit; }
+.bot-msg blockquote { border-left: 3px solid var(--primary); padding: 8px 14px; margin: 8px 0; background: #f8fafc; border-radius: 0 6px 6px 0; color: #555; }
+.bot-msg a { color: var(--primary); text-decoration: underline; }
+.bot-msg hr { border: none; border-top: 1px solid #e0e0e0; margin: 12px 0; }
+.bot-msg img { max-width: 100%; border-radius: 8px; margin: 8px 0; }
+
+/* ===== Drop overlay ===== */
+#dropOverlay { display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(74,144,226,0.12); border: 3px dashed var(--primary); z-index: 500; justify-content: center; align-items: center; font-size: 22px; color: var(--primary); font-weight: 700; pointer-events: none; }
+#dropOverlay.active { display: flex; }
+
+/* ===== Toast ===== */
+#toast { position: fixed; bottom: 24px; left: 50%; transform: translateX(-50%); background: rgba(30,30,30,0.92); color: white; padding: 10px 22px; border-radius: 10px; font-size: 14px; display: none; z-index: 1001; max-width: 90%; text-align: center; box-shadow: 0 4px 16px rgba(0,0,0,0.25); }
+#toast.show { display: block; animation: toastIn 0.25s ease; }
+
+/* ===== Image Modal ===== */
+#imageModal { display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.85); z-index: 1000; justify-content: center; align-items: center; cursor: pointer; }
+#imageModal.active { display: flex; }
+#imageModal img { max-width: 95%; max-height: 95%; border-radius: 8px; }
+
+input[type="file"] { display: none; }
+
+@keyframes fadeIn { from { opacity: 0; transform: translateY(8px); } to { opacity: 1; transform: translateY(0); } }
+@keyframes toastIn { from { opacity: 0; transform: translateY(10px) translateX(-50%); } to { opacity: 1; transform: translateY(0) translateX(-50%); } }
+
+/* ===== Empty state ===== */
+.empty-viewer { flex: 1; display: flex; align-items: center; justify-content: center; color: #aaa; font-size: 15px; }
+
+/* ===== Responsive ===== */
+@media (max-width: 840px) {
+  :root { --sidebar-w: 300px; }
+  .msg { max-width: 90%; }
+}
+@media (max-width: 680px) {
+  #sidebarToggle { display: block; }
+  .sidebar { position: fixed; top: var(--header-h); left: 0; bottom: 0; z-index: 200; transform: translateX(-100%); box-shadow: 4px 0 20px rgba(0,0,0,0.15); width: 85vw; max-width: 360px; }
+  .sidebar.open { transform: translateX(0); }
+  .sidebar-backdrop { display: none; position: fixed; top: var(--header-h); left: 0; right: 0; bottom: 0; background: rgba(0,0,0,0.3); z-index: 199; }
+  .sidebar-backdrop.active { display: block; }
+  .header-actions .desktop-only { display: none; }
+  .msg { max-width: 95%; }
+  .conv-header { padding: 12px 16px; }
+  .msg-scroll { padding: 16px; }
+}
+</style>
+</head>
+<body>
+
+<header>
+  <div style="display:flex;align-items:center;gap:8px;">
+    <button id="sidebarToggle" onclick="toggleSidebar()">☰</button>
+    <h1>📚 DGS Chat Export Viewer</h1>
+  </div>
+  <div class="header-actions">
+    <button class="header-btn" id="addFilesBtn" onclick="document.getElementById('fileInput').click()">📁 Add Files</button>
+    <button class="header-btn desktop-only" id="exportCsvBtn" onclick="exportCSV()" disabled="">📊 Export CSV</button>
+    <button class="header-btn danger desktop-only" id="clearAllBtn" onclick="clearAll()" disabled="">🗑️ Clear All</button>
+  </div>
+</header>
+
+<div class="app-body">
+  <aside class="sidebar" id="sidebar">
+    <div class="sidebar-header">
+      <input type="text" id="searchInput" placeholder="🔍 Search conversations..." oninput="renderConvList()">
+    </div>
+    <div class="stats-bar" id="statsBar"></div>
+    <div class="sort-row">
+      <label>Sort:</label>
+      <select id="sortSelect" onchange="renderConvList()">
+        <option value="name-asc">Name A→Z</option>
+        <option value="name-desc">Name Z→A</option>
+        <option value="date-asc">Date ↑</option>
+        <option value="date-desc" selected="">Date ↓</option>
+      </select>
+    </div>
+    <div class="conv-list" id="convList"></div>
+  </aside>
+  <div class="sidebar-backdrop" id="sidebarBackdrop" onclick="toggleSidebar()"></div>
+
+  <main class="viewer" id="viewer">
+    <div class="upload-screen" id="uploadScreen">
+      <div class="upload-box" id="uploadBox" onclick="document.getElementById('fileInput').click()">
+        <div class="upload-icon">📁</div>
+        <h2>Upload Chat Exports</h2>
+        <p>Drag &amp; drop your <strong>.json</strong> chat export files here, or click to browse.<br>You can upload multiple files at once.</p>
+        <span class="upload-btn-visual">Choose Files</span>
+      </div>
+    </div>
+  </main>
+</div>
+
+<input type="file" id="fileInput" multiple="" accept=".json">
+<div id="dropOverlay">📁 Drop JSON files here</div>
+<div id="toast"></div>
+<div id="imageModal" onclick="this.classList.remove('active')"><img id="modalImg" src="" alt=""></div>
+
+<script>
+// ==================== State ====================
+let conversations = [];
+let selectedId = null;
+
+// ==================== Helpers ====================
+function getMessageText(content) {
+  if (typeof content === 'string') return content;
+  if (Array.isArray(content)) {
+    return content.filter(c => c.type === 'text').map(c => c.text).join('\n');
+  }
+  return '';
+}
+
+function getMessageImages(content) {
+  if (!Array.isArray(content)) return [];
+  return content.filter(c => c.type === 'image_url').map(c => c.image_url?.url || '');
+}
+
+// ==================== Parse ====================
+function parseConversation(json, filename) {
+  const data = typeof json === 'string' ? JSON.parse(json) : json;
+  const msgs = Array.isArray(data) ? data : (data.messages || []);
+  const userMsgs = msgs.filter(m => m.role === 'user');
+  const botMsgs = msgs.filter(m => m.role === 'assistant');
+
+  let sessionStart = data.sessionStartTime || null;
+  let exportTime = data.exportTime || null;
+
+  // Duration
+  let durationStr = '';
+  const allTimestamps = msgs.map(m => m.timestamp).filter(Boolean).map(t => new Date(t).getTime()).filter(t => !isNaN(t));
+  if (allTimestamps.length >= 2) {
+    const durMs = Math.max(...allTimestamps) - Math.min(...allTimestamps);
+    const mins = Math.floor(durMs / 60000);
+    durationStr = mins < 60 ? mins + ' min' : Math.floor(mins/60) + 'h ' + (mins%60) + 'min';
+  }
+
+  return {
+    id: filename + '_' + Date.now() + '_' + Math.random().toString(36).slice(2,6),
+    filename: filename,
+    sessionStart,
+    exportTime,
+    messages: msgs,
+    userCount: userMsgs.length,
+    botCount: botMsgs.length,
+    totalCount: msgs.filter(m => m.role !== 'system').length,
+    duration: durationStr
+  };
+}
+
+// ==================== File Upload ====================
+document.getElementById('fileInput').addEventListener('change', async (e) => {
+  await handleFiles(e.target.files);
+  e.target.value = '';
+});
+
+async function handleFiles(files) {
+  let added = 0;
+  for (const file of files) {
+    if (!file.name.endsWith('.json')) { showToast('⚠️ Skipped non-JSON: ' + file.name); continue; }
+    try {
+      const text = await file.text();
+      const conv = parseConversation(text, file.name);
+      conversations.push(conv);
+      added++;
+    } catch (err) {
+      console.error('Parse error:', file.name, err);
+      showToast('❌ Failed to parse: ' + file.name);
+    }
+  }
+  if (added > 0) {
+    showToast('✅ Loaded ' + added + ' conversation' + (added > 1 ? 's' : ''));
+    updateUI();
+    if (!selectedId && conversations.length > 0) selectConversation(conversations[0].id);
+  }
+}
+
+// Drag & drop
+let dragCounter = 0;
+document.addEventListener('dragenter', e => { e.preventDefault(); dragCounter++; document.getElementById('dropOverlay').classList.add('active'); });
+document.addEventListener('dragleave', e => { e.preventDefault(); dragCounter--; if (dragCounter <= 0) { dragCounter = 0; document.getElementById('dropOverlay').classList.remove('active'); } });
+document.addEventListener('dragover', e => e.preventDefault());
+document.addEventListener('drop', async e => { e.preventDefault(); dragCounter = 0; document.getElementById('dropOverlay').classList.remove('active'); if (e.dataTransfer?.files) await handleFiles(e.dataTransfer.files); });
+
+// Upload box specific drag
+const uploadBox = document.getElementById('uploadBox');
+if (uploadBox) {
+  uploadBox.addEventListener('dragover', e => { e.preventDefault(); e.stopPropagation(); uploadBox.classList.add('dragover'); });
+  uploadBox.addEventListener('dragleave', () => uploadBox.classList.remove('dragover'));
+  uploadBox.addEventListener('drop', () => uploadBox.classList.remove('dragover'));
+}
+
+// ==================== UI Updates ====================
+function updateUI() {
+  const hasConvs = conversations.length > 0;
+  document.getElementById('exportCsvBtn').disabled = !hasConvs;
+  document.getElementById('clearAllBtn').disabled = !hasConvs;
+  renderStats();
+  renderConvList();
+  renderViewer();
+}
+
+function renderStats() {
+  const bar = document.getElementById('statsBar');
+  if (conversations.length === 0) { bar.innerHTML = ''; return; }
+  bar.innerHTML = '<div class="stat-chip"><span class="stat-num">' + conversations.length + '</span> total conversations</div>';
+}
+
+function getFilteredSorted() {
+  const query = document.getElementById('searchInput').value.toLowerCase().trim();
+  const sort = document.getElementById('sortSelect').value;
+
+  let list = conversations;
+  if (query) {
+    list = list.filter(c => {
+      if (c.filename.toLowerCase().includes(query)) return true;
+      return c.messages.some(m => getMessageText(m.content).toLowerCase().includes(query));
+    });
+  }
+
+  list = [...list];
+  const [field, dir] = sort.split('-');
+  list.sort((a, b) => {
+    let cmp = 0;
+    if (field === 'name') cmp = a.filename.localeCompare(b.filename);
+    else if (field === 'date') cmp = (a.sessionStart || '').localeCompare(b.sessionStart || '');
+    return dir === 'desc' ? -cmp : cmp;
+  });
+  return list;
+}
+
+function renderConvList() {
+  const list = getFilteredSorted();
+  const container = document.getElementById('convList');
+
+  if (list.length === 0) {
+    container.innerHTML = '<div style="padding:20px;text-align:center;color:#aaa;font-size:14px;">' + (conversations.length === 0 ? 'No conversations loaded' : 'No matches found') + '</div>';
+    return;
+  }
+
+  container.innerHTML = list.map(c => {
+    const isSelected = c.id === selectedId;
+    const dateStr = c.sessionStart ? new Date(c.sessionStart).toLocaleString('sk-SK', { day:'2-digit', month:'2-digit', year:'numeric', hour:'2-digit', minute:'2-digit' }) : '—';
+
+    return '<div class="conv-card' + (isSelected ? ' selected' : '') + '" onclick="selectConversation(\'' + c.id + '\')">' +
+      '<button class="conv-remove" onclick="event.stopPropagation();removeConversation(\'' + c.id + '\')" title="Remove">✕</button>' +
+      '<div class="conv-name" title="' + escHtml(c.filename) + '">' + escHtml(c.filename) + '</div>' +
+      '<div class="conv-meta"><span>📅 ' + dateStr + '</span><span>💬 ' + c.totalCount + ' msgs</span>' + (c.duration ? '<span>⏱ ' + c.duration + '</span>' : '') + '</div>' +
+      '</div>';
+  }).join('');
+}
+
+function selectConversation(id) {
+  selectedId = id;
+  renderConvList();
+  renderViewer();
+  if (window.innerWidth <= 680) {
+    document.getElementById('sidebar').classList.remove('open');
+    document.getElementById('sidebarBackdrop').classList.remove('active');
+  }
+}
+
+function removeConversation(id) {
+  conversations = conversations.filter(c => c.id !== id);
+  if (selectedId === id) selectedId = conversations.length > 0 ? conversations[0].id : null;
+  updateUI();
+}
+
+function clearAll() {
+  if (!confirm('Remove all loaded conversations?')) return;
+  conversations = [];
+  selectedId = null;
+  updateUI();
+}
+
+function renderViewer() {
+  const viewer = document.getElementById('viewer');
+  if (conversations.length === 0) {
+    viewer.innerHTML = '<div class="upload-screen" id="uploadScreen"><div class="upload-box" id="uploadBox" onclick="document.getElementById(\'fileInput\').click()"><div class="upload-icon">📁</div><h2>Upload Chat Exports</h2><p>Drag & drop your <strong>.json</strong> chat export files here, or click to browse.<br>You can upload multiple files at once.</p><span class="upload-btn-visual">Choose Files</span></div></div>';
+    return;
+  }
+
+  const conv = conversations.find(c => c.id === selectedId);
+  if (!conv) {
+    viewer.innerHTML = '<div class="empty-viewer">Select a conversation from the sidebar</div>';
+    return;
+  }
+
+  const dateStr = conv.sessionStart ? new Date(conv.sessionStart).toLocaleString('sk-SK') : '—';
+  const exportStr = conv.exportTime ? new Date(conv.exportTime).toLocaleString('sk-SK') : '—';
+
+  let html = '<div class="conv-viewer">';
+  html += '<div class="conv-header">';
+  html += '<h2>' + escHtml(conv.filename) + '</h2>';
+  html += '<div class="conv-header-meta">';
+  html += '<span>📅 Session: ' + dateStr + '</span>';
+  html += '<span>💾 Export: ' + exportStr + '</span>';
+  html += '<span>💬 ' + conv.userCount + ' user / ' + conv.botCount + ' bot msgs</span>';
+  if (conv.duration) html += '<span>⏱ ' + conv.duration + '</span>';
+  html += '</div></div>';
+
+  html += '<div class="msg-scroll" id="msgScroll">';
+  for (const m of conv.messages) {
+    const text = getMessageText(m.content);
+    const images = getMessageImages(m.content);
+    const ts = m.timestamp ? formatTimestamp(m.timestamp) : '';
+
+    if (m.role === 'system') {
+      html += '<div class="msg system-msg">';
+      html += '<div class="system-toggle" onclick="this.nextElementSibling.classList.toggle(\'collapsed\')">⚙️ System Prompt <span style="font-size:11px;font-weight:400;color:#b0a060">(click to expand)</span></div>';
+      html += '<div class="system-content collapsed">' + escHtml(text) + '</div>';
+      if (ts) html += '<div class="msg-timestamp">' + ts + '</div>';
+      html += '</div>';
+    } else if (m.role === 'user') {
+      html += '<div class="msg user-msg">';
+      html += '<div class="msg-role">👤 Student</div>';
+      html += escHtml(text);
+      images.forEach(url => {
+        if (url) html += '<img src="' + escHtml(url) + '" style="max-width:100%;max-height:300px;border-radius:8px;margin-top:8px;cursor:pointer;display:block;" onclick="showImage(this.src)">';
+      });
+      if (ts) html += '<div class="msg-timestamp">' + ts + '</div>';
+      html += '</div>';
+    } else if (m.role === 'assistant') {
+      html += '<div class="msg bot-msg">';
+      html += '<div class="msg-role">🤖 AI Tutor</div>';
+      html += renderMarkdown(text);
+      if (ts) html += '<div class="msg-timestamp">' + ts + '</div>';
+      html += '</div>';
+    }
+  }
+  html += '</div></div>';
+
+  viewer.innerHTML = html;
+
+  const scrollEl = document.getElementById('msgScroll');
+  if (scrollEl && window.MathJax && MathJax.typesetPromise) {
+    MathJax.typesetPromise([scrollEl]).catch(e => console.warn('MathJax error:', e));
+  }
+}
+
+// ==================== Markdown Renderer ====================
+function renderMarkdown(text) {
+  if (!text) return '';
+  const placeholders = [];
+  function ph(content, isHtml) { const i = placeholders.length; placeholders.push({ c: content, h: !!isHtml }); return '\x00PH' + i + 'PH\x00'; }
+
+  text = text.replace(/```(\w*)\n?([\s\S]*?)```/g, function(m, lang, code) {
+    return ph('<pre><code>' + code.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;') + '</code></pre>', true);
+  });
+  text = text.replace(/`([^`]+)`/g, function(m, code) {
+    return ph('<code>' + code.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;') + '</code>', true);
+  });
+
+  text = text.replace(/\\\[([\s\S]*?)\\\]/g, function(m) { return ph(m, false); });
+  text = text.replace(/\\\(([\s\S]*?)\\\)/g, function(m) { return ph(m, false); });
+  text = text.replace(/\\begin\{([^}]+)\}([\s\S]*?)\\end\{\1\}/g, function(m) { return ph(m, false); });
+  text = text.replace(/\$\$([\s\S]*?)\$\$/g, function(m, inner) { return ph('\\[' + inner + '\\]', false); });
+  text = text.replace(/(?<!\$)\$(?!\$)(?!\s)([^\$\n]+?)(?<!\s)\$(?!\$)/g, function(m, inner) { return ph('\\(' + inner + '\\)', false); });
+
+  var html = text.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
+
+  var lines = html.split('\n');
+  var processed = [];
+  var inList = false, listType = null, listItems = [];
+  for (var i = 0; i < lines.length; i++) {
+    var line = lines[i];
+    var ulMatch = line.match(/^[\s]*[\*\-]\s+(.+)$/);
+    var olMatch = line.match(/^[\s]*\d+\.\s+(.+)$/);
+    if (ulMatch || olMatch) {
+      var content = ulMatch ? ulMatch[1] : olMatch[1];
+      var curType = ulMatch ? 'ul' : 'ol';
+      if (!inList) { inList = true; listType = curType; listItems = []; }
+      else if (listType !== curType) { processed.push('<' + listType + '>' + listItems.map(function(it) { return '<li>' + it + '</li>'; }).join('') + '</' + listType + '>'); listItems = []; listType = curType; }
+      listItems.push(content);
+    } else {
+      if (inList) { processed.push('<' + listType + '>' + listItems.map(function(it) { return '<li>' + it + '</li>'; }).join('') + '</' + listType + '>'); inList = false; listType = null; listItems = []; }
+      processed.push(line);
+    }
+  }
+  if (inList) processed.push('<' + listType + '>' + listItems.map(function(it) { return '<li>' + it + '</li>'; }).join('') + '</' + listType + '>');
+  html = processed.join('\n');
+
+  html = html.replace(/^#### (.+)$/gm, '<h4>$1</h4>');
+  html = html.replace(/^### (.+)$/gm, '<h3>$1</h3>');
+  html = html.replace(/^## (.+)$/gm, '<h2>$1</h2>');
+  html = html.replace(/^# (.+)$/gm, '<h1>$1</h1>');
+
+  html = html.replace(/^&gt;\s+(.+)$/gm, '<blockquote>$1</blockquote>');
+
+  html = html.replace(/^[-*_]{3,}$/gm, '<hr>');
+
+  html = html.replace(/\*\*(.+?)\*\*/g, '<strong>$1</strong>');
+  html = html.replace(/__(.+?)__/g, '<strong>$1</strong>');
+  html = html.replace(/\*(.+?)\*/g, '<em>$1</em>');
+  html = html.replace(/_(.+?)_/g, '<em>$1</em>');
+
+  html = html.replace(/\[([^\]]+)\]\(([^)]+)\)/g, '<a href="$2" target="_blank">$1</a>');
+
+  var fLines = html.split('\n');
+  var withP = [];
+  for (var j = 0; j < fLines.length; j++) {
+    var fl = fLines[j].trim();
+    if (fl === '') withP.push('');
+    else if (fl.match(/^<(h[1-6]|ul|ol|pre|blockquote|hr)/)) withP.push(fLines[j]);
+    else if (!fl.match(/^<\/(ul|ol|li|blockquote)>$/)) withP.push('<p>' + fLines[j] + '</p>');
+    else withP.push(fLines[j]);
+  }
+  html = withP.join('\n');
+
+  html = html.replace(/\x00PH(\d+)PH\x00/g, function(_, idx) {
+    var p = placeholders[parseInt(idx)];
+    if (p.h) return p.c;
+    return p.c.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
+  });
+
+  return html;
+}
+
+// ==================== Helpers ====================
+function escHtml(str) { return (str || '').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;'); }
+
+function formatTimestamp(isoString) {
+  if (!isoString) return '';
+  const d = new Date(isoString);
+  if (isNaN(d.getTime())) return '';
+  return d.toLocaleString('sk-SK', { day:'2-digit', month:'2-digit', year:'numeric', hour:'2-digit', minute:'2-digit', second:'2-digit' });
+}
+
+function showToast(msg, duration) {
+  duration = duration || 3000;
+  const toast = document.getElementById('toast');
+  toast.textContent = msg;
+  toast.classList.add('show');
+  clearTimeout(toast._t);
+  toast._t = setTimeout(() => toast.classList.remove('show'), duration);
+}
+
+function showImage(src) {
+  document.getElementById('modalImg').src = src;
+  document.getElementById('imageModal').classList.add('active');
+}
+
+function toggleSidebar() {
+  document.getElementById('sidebar').classList.toggle('open');
+  document.getElementById('sidebarBackdrop').classList.toggle('active');
+}
+
+// ==================== CSV Export ====================
+function exportCSV() {
+  if (conversations.length === 0) return;
+  const rows = [['Filename', 'Session Start', 'Export Time', 'User Messages', 'Bot Messages', 'Total Messages', 'Duration']];
+
+  conversations.forEach(c => {
+    rows.push([
+      c.filename,
+      c.sessionStart || '',
+      c.exportTime || '',
+      c.userCount,
+      c.botCount,
+      c.totalCount,
+      c.duration || ''
+    ]);
+  });
+
+  const csv = rows.map(r => r.map(v => '"' + String(v).replace(/"/g, '""') + '"').join(',')).join('\n');
+  const bom = '\uFEFF';
+  const blob = new Blob([bom + csv], { type: 'text/csv;charset=utf-8;' });
+  const a = document.createElement('a');
+  a.href = URL.createObjectURL(blob);
+  var now = new Date();
+  a.download = 'chat_summary_' + now.getFullYear() + '-' + String(now.getMonth()+1).padStart(2,'0') + '-' + String(now.getDate()).padStart(2,'0') + '.csv';
+  a.click();
+  URL.revokeObjectURL(a.href);
+  showToast('📊 CSV exported');
+}
+
+// ==================== Init ====================
+updateUI();
+</script>
+
+
+
+</body></html>

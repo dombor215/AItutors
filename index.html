@@ -1,0 +1,125 @@
+<!DOCTYPE html><html lang="en"><head><meta name="x-poe-datastore-behavior" content="local_only"><meta http-equiv="Content-Security-Policy" content="default-src 'self' 'unsafe-inline' 'unsafe-eval' data: blob: https://cdnjs.cloudflare.com https://cdn.jsdelivr.net https://code.jquery.com https://unpkg.com https://d3js.org https://threejs.org https://cdn.plot.ly https://stackpath.bootstrapcdn.com https://maps.googleapis.com https://cdn.tailwindcss.com https://ajax.googleapis.com https://kit.fontawesome.com https://cdn.datatables.net https://maxcdn.bootstrapcdn.com https://code.highcharts.com https://tako-static-assets-production.s3.amazonaws.com https://www.youtube.com https://fonts.googleapis.com https://fonts.gstatic.com https://pfst.cf2.poecdn.net https://puc.poecdn.net https://i.imgur.com https://wikimedia.org https://*.icons8.com https://*.giphy.com https://picsum.photos https://images.unsplash.com; frame-src 'self' https://www.youtube.com https://trytako.com; child-src 'self'; manifest-src 'self'; worker-src 'self'; upgrade-insecure-requests; block-all-mixed-content;">
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <title>AI Tutors</title>
+  <style>
+    :root{
+      --bg:#f7f9fc;
+      --card:#ffffff;
+      --accent:#0f62fe;
+      --muted:#586069;
+    }
+    *{box-sizing:border-box}
+    body{
+      margin:0;
+      font-family:system-ui,-apple-system,"Segoe UI",Roboto,"Helvetica Neue",Arial;
+      background:linear-gradient(180deg,var(--bg) 0%, #eef4ff 100%);
+      color:#0b1220;
+      min-height:100vh;
+      display:flex;
+      align-items:center;
+      justify-content:center;
+      padding:2rem;
+    }
+    .container{
+      width:100%;
+      max-width:760px;
+      background:var(--card);
+      border-radius:12px;
+      box-shadow:0 8px 30px rgba(15,20,40,0.08);
+      padding:1.25rem 1.5rem;
+    }
+    header{
+      display:flex;
+      align-items:center;
+      gap:0.75rem;
+      margin-bottom:0.5rem;
+    }
+    .logo{
+      width:56px;
+      height:56px;
+      background:linear-gradient(135deg,var(--accent),#5aa8ff);
+      border-radius:10px;
+      display:flex;
+      align-items:center;
+      justify-content:center;
+      color:white;
+      font-weight:700;
+      font-size:18px;
+      box-shadow:0 6px 18px rgba(15,98,254,0.12);
+    }
+    h1{
+      margin:0;
+      font-size:1.25rem;
+      letter-spacing:0.2px;
+    }
+    p.lead{
+      margin:0.625rem 0 1rem;
+      color:var(--muted);
+      font-size:0.98rem;
+    }
+    nav ul{
+      list-style:none;
+      padding:0;
+      margin:0;
+      display:grid;
+      gap:0.5rem;
+    }
+    nav a{
+      display:flex;
+      align-items:center;
+      justify-content:space-between;
+      gap:0.75rem;
+      padding:0.65rem 0.9rem;
+      background:linear-gradient(180deg,#ffffff,#fbfdff);
+      border:1px solid rgba(11,18,32,0.06);
+      border-radius:8px;
+      text-decoration:none;
+      color:var(--accent);
+      font-weight:600;
+      transition:transform .12s ease, box-shadow .12s ease;
+    }
+    nav a:hover{
+      transform:translateY(-3px);
+      box-shadow:0 8px 20px rgba(11,18,32,0.06);
+    }
+    nav .meta{
+      color:var(--muted);
+      font-weight:500;
+      font-size:0.9rem;
+    }
+    footer{
+      margin-top:1rem;
+      font-size:0.85rem;
+      color:var(--muted);
+      text-align:right;
+    }
+
+    /* Small screens */
+    @media (max-width:420px){
+      .container{padding:1rem}
+      .logo{width:48px;height:48px;font-size:16px}
+      h1{font-size:1.1rem}
+    }
+  </style>
+</head>
+<body>
+  <main class="container" role="main">
+    <header>
+      <div class="logo" aria-hidden="true">AI</div>
+      <div>
+        <h1>AI Tutors</h1>
+        <p class="lead">Choose an AI tutor or topic to begin a guided discussion and learning session.</p>
+      </div>
+    </header>
+
+    <nav aria-label="AI tutors and topics">
+      <ul>
+        <li><a href="MYP5-waves/index.html">MYP5 - Impacts of Science: Waves and Society<span class="meta">/MYP5-waves</span></a></li>
+        <li><a href="MYP4-mechanics/index.html">MYP4 - Impacts of Science: Mechanics and Society <span class="meta">/MYP4-mechanics</span></a></li>
+      </ul>
+    </nav>
+  </main>
+
+
+</body></html>
