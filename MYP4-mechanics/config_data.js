@@ -1,6 +1,6 @@
 const tabTitle = "MYP AI Tutor"
 const headerTitle = "Impacts of Science: Mechanics and Society";
-const copyrightText = "© 2026 Dominik Borovský & Jozef Hanč, v1.2, powered by OpenAI GPT-5.3";
+const copyrightText = "© 2026 Dominik Borovský & Jozef Hanč, v1.3, powered by OpenAI GPT-5.3";
 const API_URL = "https://api.poe.com/v1/chat/completions"; // you may adjust this part based on your prefered AI provider
 const MODEL_NAME = "GPT-5.3-Instant"; // you may adjust this part based on your prefered AI provider
 const API_FIRST_PART = "sk-poe-XOcVz78f-vmTheTmhvzR-OX6Kpge42xwBtzf"; //fill only part of api and the rest use as a password  to your app

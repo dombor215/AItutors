@@ -1,6 +1,6 @@
 <!DOCTYPE html><html lang="en"><head>
 <meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
 <title>DGS AI Tutor</title>
 <link rel="icon" type="image/svg+xml" href="data:image/svg+xml,
 %3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'%3E
@@ -10,7 +10,6 @@
 %3Crect x='47' y='35' width='6' height='25' fill='white'/%3E
 %3Ccircle cx='50' cy='65' r='4' fill='%230256d1'/%3E
 %3C/svg%3E">
-
 
 <!-- JSZip for Office/ODF extraction -->
 <script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
@@ -27,23 +26,35 @@
     --border-radius: 12px;
     --shadow: 0 2px 12px rgba(0, 0, 0, 0.08);
     --shadow-hover: 0 4px 16px rgba(0, 0, 0, 0.12);
+    --safe-top: env(safe-area-inset-top, 0px);
+    --safe-bottom: env(safe-area-inset-bottom, 0px);
+    --safe-left: env(safe-area-inset-left, 0px);
+    --safe-right: env(safe-area-inset-right, 0px);
   }
 
   * { box-sizing: border-box; }
+
+  html, body { height: 100%; }
 
   body {
     font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto', 'Oxygen', 'Ubuntu', 'Cantarell', sans-serif;
     display: flex;
     flex-direction: column;
     height: 100vh;
+    height: 100dvh; /* dynamic viewport for mobile */
     margin: 0;
     background: var(--background);
+    overscroll-behavior: none;
+    -webkit-tap-highlight-color: transparent;
   }
 
   header {
     background: linear-gradient(135deg, var(--primary-color), var(--secondary-color));
     color: white;
     padding: 10px 16px;
+    padding-top: calc(10px + var(--safe-top));
+    padding-left: calc(16px + var(--safe-left));
+    padding-right: calc(16px + var(--safe-right));
     text-align: center;
     font-size: 18px;
     font-weight: 700;
@@ -54,6 +65,7 @@
     flex-direction: column;
     align-items: center;
     gap: 2px;
+    flex-shrink: 0;
   }
 
   .copyright {
@@ -65,7 +77,10 @@
   #chat {
     flex: 1;
     overflow-y: auto;
-    padding: 24px;
+    -webkit-overflow-scrolling: touch;
+    padding: 20px 24px;
+    padding-left: calc(24px + var(--safe-left));
+    padding-right: calc(24px + var(--safe-right));
     display: flex;
     flex-direction: column;
     gap: 16px;
@@ -73,12 +88,13 @@
 
   .message {
     margin: 0;
-    padding: 14px 18px;
+    padding: 12px 16px;
     border-radius: var(--border-radius);
-    max-width: 70%;
+    max-width: 75%;
     box-shadow: var(--shadow);
     line-height: 1.6;
     word-wrap: break-word;
+    overflow-wrap: break-word;
     animation: msgFadeIn 0.3s ease-in;
     font-size: 15px;
   }
@@ -106,6 +122,10 @@
     font-size: 13px;
     color: #1a73e8;
     font-weight: 500;
+    max-width: 100%;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
   }
 
   .user {
@@ -129,6 +149,12 @@
     min-height: 48px;
     display: flex;
     align-items: center;
+  }
+
+  .bot pre {
+    max-width: 100%;
+    overflow-x: auto;
+    -webkit-overflow-scrolling: touch;
   }
 
   .typing {
@@ -186,6 +212,7 @@
     font-family: 'Courier New', monospace;
     font-size: 14px;
     color: #d63384;
+    word-break: break-word;
   }
   .bot pre {
     background: #f4f4f4;
@@ -193,6 +220,10 @@
     border-radius: 6px;
     overflow-x: auto;
     margin: 8px 0;
+  }
+  .bot pre code {
+    word-break: normal;
+    white-space: pre;
   }
 
   /* ========= Timestamp ========= */
@@ -218,9 +249,11 @@
     display: flex;
     flex-direction: column;
     padding: 0;
+    padding-bottom: var(--safe-bottom);
     background: #fff;
     border-top: 1px solid #e0e0e0;
     box-shadow: 0 -2px 12px rgba(0, 0, 0, 0.05);
+    flex-shrink: 0;
   }
 
   /* Attachment preview area */
@@ -232,6 +265,7 @@
     align-items: center;
     border-bottom: 1px solid #eee;
     background: #fafbfc;
+    overflow-x: auto;
   }
   #attachmentArea.active { display: flex; }
 
@@ -268,8 +302,8 @@
     color: white;
     border: none;
     border-radius: 50%;
-    width: 18px;
-    height: 18px;
+    width: 20px;
+    height: 20px;
     cursor: pointer;
     font-size: 11px;
     display: flex;
@@ -285,13 +319,16 @@
     display: flex;
     align-items: flex-end;
     padding: 8px;
-    gap: 10px;
+    padding-left: calc(8px + var(--safe-left));
+    padding-right: calc(8px + var(--safe-right));
+    gap: 8px;
   }
 
   #messageInput {
     flex: 1;
+    min-width: 0;
     padding: 12px 14px;
-    font-size: 15px;
+    font-size: 16px; /* 16px prevents iOS zoom on focus */
     border: 2px solid #e0e0e0;
     border-radius: 10px;
     outline: none;
@@ -301,12 +338,20 @@
     line-height: 1.5;
     max-height: 150px;
     min-height: 44px;
+    -webkit-appearance: none;
+  }
+  #messageInput:focus { border-color: var(--primary-color); }
+
+  .button-group {
+    display: flex;
+    gap: 6px;
+    align-items: flex-end;
+    flex-wrap: wrap;
+    justify-content: flex-end;
   }
 
-  .button-group { display: flex; gap: 8px; align-items: flex-end; }
-
   button {
-    padding: 12px 16px;
+    padding: 10px 12px;
     color: white;
     border: none;
     border-radius: 10px;
@@ -321,6 +366,7 @@
     align-items: center;
     justify-content: center;
     background: linear-gradient(135deg, var(--primary-color), var(--secondary-color));
+    flex-shrink: 0;
   }
 
   button:disabled {
@@ -335,7 +381,8 @@
     font-size: 11px;
     color: #aaa;
     text-align: center;
-    padding: 0 4px 4px;
+    padding: 0 8px 6px;
+    line-height: 1.4;
   }
 
   /* ========= Overlays & Modals ========= */
@@ -366,13 +413,14 @@
     justify-content: center;
     align-items: center;
     cursor: pointer;
+    padding: 16px;
   }
   #imageModal.active { display: flex; }
-  #imageModal img { max-width: 95%; max-height: 95%; border-radius: 8px; }
+  #imageModal img { max-width: 100%; max-height: 100%; border-radius: 8px; }
 
   #toast {
     position: fixed;
-    bottom: 90px;
+    bottom: calc(90px + var(--safe-bottom));
     left: 50%;
     transform: translateX(-50%);
     background: rgba(30, 30, 30, 0.92);
@@ -408,25 +456,29 @@
     z-index: 900;
     justify-content: center;
     align-items: center;
-    padding: 16px;
+    padding: 12px;
+    padding-top: calc(12px + var(--safe-top));
+    padding-bottom: calc(12px + var(--safe-bottom));
   }
   #drawModal.active { display: flex; }
 
   #drawContainer {
     background: white;
     border-radius: 14px;
-    padding: 16px;
+    padding: 14px;
     display: flex;
     flex-direction: column;
-    gap: 12px;
+    gap: 10px;
+    width: 100%;
     max-width: 100%;
     max-height: 100%;
+    overflow: auto;
     box-shadow: 0 8px 40px rgba(0,0,0,0.3);
   }
 
   #drawToolbar {
     display: flex;
-    gap: 10px;
+    gap: 8px;
     align-items: center;
     flex-wrap: wrap;
   }
@@ -435,16 +487,17 @@
     display: flex;
     gap: 6px;
     align-items: center;
+    flex-wrap: wrap;
   }
 
   .draw-color-btn {
-    width: 30px;
-    height: 30px;
+    width: 32px;
+    height: 32px;
     border-radius: 50%;
     border: 3px solid #ddd;
     cursor: pointer;
     padding: 0;
-    min-width: 30px;
+    min-width: 32px;
     box-shadow: none;
     background: #000;
     transition: border-color 0.15s, box-shadow 0.15s;
@@ -460,8 +513,8 @@
     border: 2px solid #ddd;
     border-radius: 8px;
     padding: 0;
-    min-width: 36px;
-    height: 36px;
+    min-width: 38px;
+    height: 38px;
     font-size: 16px;
     box-shadow: none;
     cursor: pointer;
@@ -495,17 +548,19 @@
     touch-action: none;
     display: block;
     background: #fff;
+    max-width: 100%;
+    height: auto;
   }
 
   #drawFooter {
     display: flex;
-    gap: 10px;
+    gap: 8px;
     justify-content: flex-end;
     flex-wrap: wrap;
   }
 
   .draw-action-btn {
-    padding: 10px 22px;
+    padding: 10px 18px;
     border-radius: 8px;
     font-size: 14px;
     font-weight: 600;
@@ -531,6 +586,188 @@
     color: white;
   }
   .draw-action-btn.send-btn:hover { opacity: 0.9; }
+
+  /* ==================================================== */
+  /* ================= MOBILE OPTIMIZATIONS ============= */
+  /* ==================================================== */
+
+  /* Tablets and smaller */
+  @media (max-width: 768px) {
+    header {
+      font-size: 16px;
+      padding: 8px 12px;
+      padding-top: calc(8px + var(--safe-top));
+    }
+    .copyright { font-size: 10px; }
+
+    #chat {
+      padding: 14px;
+      padding-left: calc(14px + var(--safe-left));
+      padding-right: calc(14px + var(--safe-right));
+      gap: 12px;
+    }
+
+    .message {
+      max-width: 88%;
+      padding: 10px 14px;
+      font-size: 14.5px;
+    }
+
+    .message img.att-image { max-height: 240px; }
+
+    .bot h1 { font-size: 1.3em; }
+    .bot h2 { font-size: 1.15em; }
+    .bot h3 { font-size: 1.05em; }
+
+    #inputRow {
+      padding: 6px;
+      padding-left: calc(6px + var(--safe-left));
+      padding-right: calc(6px + var(--safe-right));
+      gap: 6px;
+    }
+
+    .button-group { gap: 4px; }
+
+    button {
+      min-width: 40px;
+      height: 40px;
+      padding: 8px;
+      font-size: 16px;
+      border-radius: 8px;
+    }
+
+    #messageInput {
+      min-height: 40px;
+      padding: 10px 12px;
+    }
+
+    .upload-hint {
+      font-size: 10px;
+      padding: 0 6px 6px;
+    }
+
+    #attachmentArea {
+      padding: 8px 12px;
+      gap: 6px;
+    }
+
+    .att-item {
+      font-size: 12px;
+      padding: 4px 8px;
+      max-width: 180px;
+    }
+    .att-item .att-name { max-width: 90px; }
+
+    #toast {
+      font-size: 13px;
+      padding: 9px 18px;
+      bottom: calc(80px + var(--safe-bottom));
+    }
+
+    #drawToolbar { gap: 6px; }
+    .draw-size input[type="range"] { width: 60px; }
+  }
+
+  /* Phones */
+  @media (max-width: 480px) {
+    header {
+      font-size: 15px;
+      padding: 7px 10px;
+      padding-top: calc(7px + var(--safe-top));
+    }
+
+    #chat {
+      padding: 10px;
+      padding-left: calc(10px + var(--safe-left));
+      padding-right: calc(10px + var(--safe-right));
+      gap: 10px;
+    }
+
+    .message {
+      max-width: 92%;
+      padding: 9px 12px;
+      font-size: 14px;
+    }
+
+    .message-timestamp { font-size: 10px; margin-top: 6px; }
+
+    /* Allow buttons to wrap to a second row if needed */
+    #inputRow {
+      flex-wrap: wrap;
+      padding: 6px;
+    }
+
+    #messageInput {
+      flex: 1 1 100%;
+      order: -1;
+      min-height: 42px;
+      margin-bottom: 4px;
+    }
+
+    .button-group {
+      flex: 1 1 100%;
+      justify-content: space-between;
+      gap: 4px;
+    }
+
+    button {
+      min-width: 0;
+      flex: 1 1 0;
+      max-width: 56px;
+      height: 40px;
+      padding: 6px;
+      font-size: 16px;
+    }
+
+    #sendBtn {
+      flex: 1.5 1 0;
+      max-width: 80px;
+    }
+
+    .upload-hint {
+      font-size: 10px;
+      padding: 0 4px 4px;
+    }
+
+    .att-item { max-width: 160px; }
+    .att-item .att-name { max-width: 70px; }
+
+    /* Draw modal compact */
+    #drawModal { padding: 6px; padding-top: calc(6px + var(--safe-top)); padding-bottom: calc(6px + var(--safe-bottom)); }
+    #drawContainer { padding: 10px; gap: 8px; border-radius: 10px; }
+
+    .draw-color-btn { width: 28px; height: 28px; min-width: 28px; border-width: 2px; }
+    .draw-tool-btn { min-width: 34px; height: 34px; font-size: 14px; }
+    .draw-size { font-size: 12px; }
+    .draw-size input[type="range"] { width: 50px; }
+
+    .draw-action-btn {
+      padding: 9px 14px;
+      font-size: 13px;
+      flex: 1 1 0;
+    }
+    #drawFooter { gap: 6px; }
+
+    #dropOverlay { font-size: 18px; border-width: 2px; }
+  }
+
+  /* Very small phones */
+  @media (max-width: 360px) {
+    .message { max-width: 95%; font-size: 13.5px; }
+    button { height: 38px; font-size: 15px; }
+    #messageInput { min-height: 40px; font-size: 16px; }
+  }
+
+  /* Landscape orientation on short-height devices */
+  @media (max-height: 500px) and (orientation: landscape) {
+    header { padding: 4px 12px; font-size: 14px; }
+    .copyright { display: none; }
+    #chat { padding: 8px 14px; gap: 8px; }
+    .upload-hint { display: none; }
+    #inputRow { padding: 4px 6px; }
+    button { height: 38px; }
+    #messageInput { min-height: 38px; }
+  }
 </style>
 
 <script>
@@ -675,6 +912,19 @@ window.addEventListener("DOMContentLoaded", () => {
   }
   initDrawCanvas();
 });
+
+// Keep chat scrolled to bottom when mobile keyboard opens/closes (visual viewport change)
+if (window.visualViewport) {
+  let lastVH = window.visualViewport.height;
+  window.visualViewport.addEventListener('resize', () => {
+    const diff = lastVH - window.visualViewport.height;
+    // Keyboard likely opened (shrinking viewport). Keep near-bottom view.
+    if (Math.abs(diff) > 100) {
+      setTimeout(() => { chatBox.scrollTop = chatBox.scrollHeight; }, 50);
+    }
+    lastVH = window.visualViewport.height;
+  });
+}
 
 // ===================== Toast =====================
 function showToast(msg, duration = 3000) {
@@ -1137,7 +1387,7 @@ document.addEventListener("paste", async (e) => {
   }
 });
 
-// Drag and drop
+// Drag and drop (desktop only; harmless on mobile)
 let dragCounter = 0;
 document.addEventListener("dragenter", (e) => { e.preventDefault(); dragCounter++; document.getElementById("dropOverlay").classList.add("active"); });
 document.addEventListener("dragleave", (e) => { e.preventDefault(); dragCounter--; if (dragCounter <= 0) { dragCounter = 0; document.getElementById("dropOverlay").classList.remove("active"); } });
@@ -1148,8 +1398,7 @@ document.addEventListener("drop", async (e) => {
   if (e.dataTransfer?.files) for (const file of e.dataTransfer.files) await processAndAttach(file);
 });
 
-// ===================== Markdown / MathJax (FIXED) =====================
-
+// ===================== Markdown / MathJax =====================
 function renderMarkdown(text) {
   const placeholders = [];
 
@@ -1159,44 +1408,33 @@ function renderMarkdown(text) {
     return '\x00PH' + idx + 'PH\x00';
   }
 
-  // 1. Protect fenced code blocks
   text = text.replace(/```(\w*)\n?([\s\S]*?)```/g, function(m, lang, code) {
     var esc = code.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
     return ph('<pre><code>' + esc + '</code></pre>', true);
   });
 
-  // 2. Protect inline code
   text = text.replace(/`([^`]+)`/g, function(m, code) {
     var esc = code.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
     return ph('<code>' + esc + '</code>', true);
   });
 
-  // 3. Protect display math \[...\]
   text = text.replace(/\\\[([\s\S]*?)\\\]/g, function(m) { return ph(m, false); });
-
-  // 4. Protect inline math \(...\)
   text = text.replace(/\\\(([\s\S]*?)\\\)/g, function(m) { return ph(m, false); });
-
-  // 5. Protect \begin{env}...\end{env}
   text = text.replace(/\\begin\{([^}]+)\}([\s\S]*?)\\end\{\1\}/g, function(m) { return ph(m, false); });
 
-  // 6. Convert $$...$$ to \[...\] and protect
   text = text.replace(/\$\$([\s\S]*?)\$\$/g, function(m, inner) {
     return ph('\\[' + inner + '\\]', false);
   });
 
-  // 7. Convert $...$ to \(...\) and protect (no spaces at edges, single line)
   text = text.replace(/(?<!\$)\$(?!\$)(?!\s)([^\$\n]+?)(?<!\s)\$(?!\$)/g, function(m, inner) {
     return ph('\\(' + inner + '\\)', false);
   });
 
-  // HTML-escape remaining text
   var html = text
     .replace(/&/g, "&amp;")
     .replace(/</g, "&lt;")
     .replace(/>/g, "&gt;");
 
-  // Lists
   var lines = html.split('\n');
   var processed = [];
   var inList = false;
@@ -1238,31 +1476,19 @@ function renderMarkdown(text) {
 
   html = processed.join('\n');
 
-  // Headings
   html = html.replace(/^#### (.+)$/gm, '<h4>$1</h4>');
   html = html.replace(/^### (.+)$/gm, '<h3>$1</h3>');
   html = html.replace(/^## (.+)$/gm, '<h2>$1</h2>');
   html = html.replace(/^# (.+)$/gm, '<h1>$1</h1>');
-
-  // Blockquote
   html = html.replace(/^&gt;\s+(.+)$/gm, '<blockquote>$1</blockquote>');
-
-  // Horizontal rule
   html = html.replace(/^[-*_]{3,}$/gm, '<hr>');
-
-  // Bold (before italic)
   html = html.replace(/\*\*(.+?)\*\*/g, '<strong>$1</strong>');
   html = html.replace(/__(.+?)__/g, '<strong>$1</strong>');
-
-  // Italic
   html = html.replace(/\*(.+?)\*/g, '<em>$1</em>');
   html = html.replace(/_(.+?)_/g, '<em>$1</em>');
-
-  // Links
   html = html.replace(/\[([^\]]+)\]\(([^)]+)\)/g, '<a href="$2" target="_blank">$1</a>');
   html = html.replace(/(?<!href=")(?<!">)((?:https?:\/\/)[^\s<]+)/g, '<a href="$1" target="_blank">$1</a>');
 
-  // Paragraphs
   var finalLines = html.split('\n');
   var withParagraphs = [];
 
@@ -1281,43 +1507,28 @@ function renderMarkdown(text) {
   }
   html = withParagraphs.join('\n');
 
-  // Restore placeholders
   html = html.replace(/\x00PH(\d+)PH\x00/g, function(_, idx) {
     var p = placeholders[parseInt(idx)];
     if (p.isHtml) {
       return p.content;
     }
-    // LaTeX: HTML-escape so browser doesn't interpret < > as tags
     return p.content.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
   });
 
   return html;
 }
 
-// Render LaTeX in user messages (escape HTML but preserve LaTeX delimiters)
 function renderUserContent(text) {
   var uPh = [];
-
-  // Extract LaTeX before HTML-escaping
-  // \[...\]
   text = text.replace(/\\\[([\s\S]*?)\\\]/g, function(m) { uPh.push(m); return '\x00U' + (uPh.length - 1) + 'U\x00'; });
-  // \(...\)
   text = text.replace(/\\\(([\s\S]*?)\\\)/g, function(m) { uPh.push(m); return '\x00U' + (uPh.length - 1) + 'U\x00'; });
-  // \begin{env}...\end{env}
   text = text.replace(/\\begin\{([^}]+)\}([\s\S]*?)\\end\{\1\}/g, function(m) { uPh.push(m); return '\x00U' + (uPh.length - 1) + 'U\x00'; });
-  // $$...$$
   text = text.replace(/\$\$([\s\S]*?)\$\$/g, function(m, inner) { uPh.push('\\[' + inner + '\\]'); return '\x00U' + (uPh.length - 1) + 'U\x00'; });
-  // $...$
   text = text.replace(/(?<!\$)\$(?!\$)(?!\s)([^\$\n]+?)(?<!\s)\$(?!\$)/g, function(m, inner) { uPh.push('\\(' + inner + '\\)'); return '\x00U' + (uPh.length - 1) + 'U\x00'; });
-
-  // HTML-escape
   text = text.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
-
-  // Restore placeholders (HTML-escape LaTeX content for safe innerHTML)
   text = text.replace(/\x00U(\d+)U\x00/g, function(_, idx) {
     return uPh[parseInt(idx)].replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
   });
-
   return text;
 }
 
@@ -1339,7 +1550,6 @@ function addMessage(content, sender, attachments, timestamp) {
   if (sender === "bot") {
     msg.innerHTML = renderMarkdown(content);
   } else {
-    // User message: show text with LaTeX support
     if (content) {
       const textSpan = document.createElement("span");
       textSpan.innerHTML = renderUserContent(content);
@@ -1347,7 +1557,6 @@ function addMessage(content, sender, attachments, timestamp) {
     }
   }
 
-  // Render attachments in message bubble
   if (attachments && attachments.length > 0) {
     attachments.forEach(att => {
       if (att.isImage && att.dataUrl) {
@@ -1370,7 +1579,6 @@ function addMessage(content, sender, attachments, timestamp) {
     });
   }
 
-  // Append timestamp
   if (timestamp) {
     msg.appendChild(createTimestampEl(timestamp));
   }
@@ -1378,7 +1586,6 @@ function addMessage(content, sender, attachments, timestamp) {
   chatBox.appendChild(msg);
   chatBox.scrollTop = chatBox.scrollHeight;
 
-  // Typeset math for both user and bot messages
   typesetMath(msg);
   return msg;
 }
@@ -1423,7 +1630,6 @@ async function typeBotMessage(element, fullText, timestamp) {
   cursor.remove();
   element.innerHTML = renderMarkdown(fullText);
 
-  // Append timestamp after rendering final content
   if (timestamp) {
     element.appendChild(createTimestampEl(timestamp));
   }
@@ -1466,7 +1672,6 @@ async function sendMessage() {
   const userTimestamp = new Date().toISOString();
   addMessage(userMessage, "user", currentAttachments, userTimestamp);
 
-  // Build API content
   let apiContent;
   const hasImages = currentAttachments.some(a => a.isImage);
   const textFiles = currentAttachments.filter(a => !a.isImage && a.textContent);
@@ -1532,13 +1737,15 @@ async function sendMessage() {
   } finally {
     currentTypingEl = null;
     setUiProcessing(false);
-    input.focus();
+    // Don't auto-focus on mobile — prevents unwanted keyboard popup
+    if (!('ontouchstart' in window)) input.focus();
   }
 }
 
 // ===================== Textarea auto-grow =====================
 input.addEventListener("keydown", (event) => {
-  if (event.key === "Enter" && !event.shiftKey) {
+  // Only Enter-to-send on devices with a physical keyboard (avoid mobile send-on-enter)
+  if (event.key === "Enter" && !event.shiftKey && !('ontouchstart' in window)) {
     event.preventDefault();
     sendMessage();
   }
@@ -1570,7 +1777,6 @@ function initDrawCanvas() {
     const pos = getCanvasPos(e);
     lastDrawX = pos.x;
     lastDrawY = pos.y;
-    // Draw a dot for single taps/clicks
     if (drawCtx) {
       drawCtx.beginPath();
       drawCtx.arc(pos.x, pos.y, drawCtx.lineWidth / 2, 0, Math.PI * 2);
@@ -1602,6 +1808,7 @@ function initDrawCanvas() {
   canvas.addEventListener('touchstart', startDraw, { passive: false });
   canvas.addEventListener('touchmove', doDraw, { passive: false });
   canvas.addEventListener('touchend', endDraw);
+  canvas.addEventListener('touchcancel', endDraw);
 
   document.getElementById('penSize').addEventListener('input', function() {
     if (drawCtx) drawCtx.lineWidth = parseInt(this.value);
@@ -1613,16 +1820,22 @@ function openDrawModal() {
   modal.classList.add('active');
   const canvas = document.getElementById('drawCanvas');
 
-  const w = Math.min(window.innerWidth - 64, 900);
-  const h = Math.min(window.innerHeight - 220, 600);
+  // Responsive canvas sizing — account for small viewports and safe areas
+  const isPhone = window.innerWidth <= 480;
+  const horizontalPad = isPhone ? 30 : 64;
+  const verticalPad = isPhone ? 220 : 240;
+
+  const w = Math.max(260, Math.min(window.innerWidth - horizontalPad, 900));
+  const h = Math.max(220, Math.min(window.innerHeight - verticalPad, 600));
   canvas.width = w;
   canvas.height = h;
+  canvas.style.width = w + 'px';
+  canvas.style.height = h + 'px';
 
   drawCtx = canvas.getContext('2d');
   drawCtx.fillStyle = '#ffffff';
   drawCtx.fillRect(0, 0, w, h);
 
-  // Reset tools
   currentPenColor = '#000';
   isEraserActive = false;
   drawCtx.strokeStyle = '#000';
@@ -1630,7 +1843,6 @@ function openDrawModal() {
   drawCtx.lineCap = 'round';
   drawCtx.lineJoin = 'round';
 
-  // Reset UI
   document.querySelectorAll('.draw-color-btn').forEach(function(b, i) {
     b.classList.toggle('active', i === 0);
   });
@@ -1668,7 +1880,6 @@ function toggleEraser() {
   } else {
     if (drawCtx) drawCtx.strokeStyle = currentPenColor;
     eraserBtn.classList.remove('active');
-    // Re-highlight the current color button
     document.querySelectorAll('.draw-color-btn').forEach(function(b) {
       if (b.style.background === currentPenColor || b.style.backgroundColor === currentPenColor) {
         b.classList.add('active');
@@ -1727,13 +1938,13 @@ document.getElementById("exportBtn").addEventListener("click", () => {
     const a = document.createElement("a");
     a.href = URL.createObjectURL(file);
     var now = new Date();
-	var ts = now.getFullYear() + '-'
-	  + String(now.getMonth() + 1).padStart(2, '0') + '-'
-	  + String(now.getDate()).padStart(2, '0') + '_'
-	  + String(now.getHours()).padStart(2, '0') + '-'
-	  + String(now.getMinutes()).padStart(2, '0') + '-'
-	  + String(now.getSeconds()).padStart(2, '0');
-	a.download = "chat_export_" + ts + ".json";
+    var ts = now.getFullYear() + '-'
+      + String(now.getMonth() + 1).padStart(2, '0') + '-'
+      + String(now.getDate()).padStart(2, '0') + '_'
+      + String(now.getHours()).padStart(2, '0') + '-'
+      + String(now.getMinutes()).padStart(2, '0') + '-'
+      + String(now.getSeconds()).padStart(2, '0');
+    a.download = "chat_export_" + ts + ".json";
     a.click();
     URL.revokeObjectURL(a.href);
   } catch (error) {
@@ -1750,48 +1961,65 @@ document.getElementById("importBtn").addEventListener("click", async () => {
         multiple: false
       });
       const file = await fileHandle.getFile();
-      const text = await file.text();
-      const importedData = JSON.parse(text);
-
-      const importedMessages = Array.isArray(importedData) ? importedData : (importedData.messages || []);
-
-      if (Array.isArray(importedMessages)) {
-        messages = importedMessages;
-        chatBox.innerHTML = "";
-
-        // Restore sessionStartTime if available
-        if (importedData.sessionStartTime) {
-          sessionStartTime = importedData.sessionStartTime;
-        }
-
-        importedMessages.forEach(m => {
-          if (m.role !== "system") {
-            addMessage(
-              typeof m.content === "string" ? m.content : "(multimodal content)",
-              m.role === "user" ? "user" : "bot",
-              null,
-              m.timestamp || null
-            );
-          }
-        });
-        showToast("✅ Chat imported successfully.");
-      } else {
-        showToast("❌ Invalid chat file.");
-      }
+      await handleImportFile(file);
     } else {
-      showToast("⚠️ File import not supported in this browser.");
+      // Fallback for mobile browsers without File System Access API
+      const importInput = document.createElement('input');
+      importInput.type = 'file';
+      importInput.accept = 'application/json,.json';
+      importInput.onchange = async (e) => {
+        const file = e.target.files[0];
+        if (file) await handleImportFile(file);
+      };
+      importInput.click();
     }
   } catch (error) {
-    console.error("Import failed:", error);
-    showToast("❌ Failed to import chat.");
+    // User cancelled or error
+    if (error && error.name !== 'AbortError') {
+      console.error("Import failed:", error);
+      showToast("❌ Failed to import chat.");
+    }
   }
 });
+
+async function handleImportFile(file) {
+  try {
+    const text = await file.text();
+    const importedData = JSON.parse(text);
+    const importedMessages = Array.isArray(importedData) ? importedData : (importedData.messages || []);
+
+    if (Array.isArray(importedMessages)) {
+      messages = importedMessages;
+      chatBox.innerHTML = "";
+
+      if (importedData.sessionStartTime) {
+        sessionStartTime = importedData.sessionStartTime;
+      }
+
+      importedMessages.forEach(m => {
+        if (m.role !== "system") {
+          addMessage(
+            typeof m.content === "string" ? m.content : "(multimodal content)",
+            m.role === "user" ? "user" : "bot",
+            null,
+            m.timestamp || null
+          );
+        }
+      });
+      showToast("✅ Chat imported successfully.");
+    } else {
+      showToast("❌ Invalid chat file.");
+    }
+  } catch (err) {
+    console.error("Import parse failed:", err);
+    showToast("❌ Failed to import chat.");
+  }
+}
 
 // ===================== Header config =====================
 document.getElementById("headerTitle").textContent = headerTitle;
 document.querySelector(".copyright").textContent = copyrightText;
 document.title = tabTitle;
 </script>
-
 
 </body></html>
