@@ -338,7 +338,6 @@
     line-height: 1.5;
     max-height: 150px;
     min-height: 44px;
-    -webkit-appearance: none;
   }
   #messageInput:focus { border-color: var(--primary-color); }
 
@@ -2123,6 +2122,49 @@ async function handleImportFile(file) {
 document.getElementById("headerTitle").textContent = headerTitle;
 document.querySelector(".copyright").textContent = copyrightText;
 document.title = tabTitle;
+
+// ===================== Copy protection =====================
+document.addEventListener('copy', (e) => {
+  // Only scramble if protection is enabled
+  if (typeof copyPasteProtection === 'undefined' || !copyPasteProtection) return;
+
+  const selection = document.getSelection();
+  const selectedText = selection ? selection.toString() : '';
+  if (!selectedText) return;
+
+  // Same scrambling logic as your paste handler
+  const altered = selectedText.replace(/[a-zA-Z]/g, (ch) => {
+    const isUpper = ch >= 'A' && ch <= 'Z';
+    const base = isUpper ? 65 : 97;
+    return String.fromCharCode(base + Math.floor(Math.random() * 26));
+  });
+
+  e.clipboardData.setData('text/plain', altered);
+  // Also override HTML so rich-copy (e.g., copying from rendered markdown) is scrambled too
+  e.clipboardData.setData('text/html', altered.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;'));
+  e.preventDefault();
+
+  // Optional: let the user know
+  // showToast("⚠️ Copied text was scrambled (copy protection on).");
+});
+
+// Also handle the 'cut' event the same way
+document.addEventListener('cut', (e) => {
+  if (typeof copyPasteProtection === 'undefined' || !copyPasteProtection) return;
+
+  const selection = document.getSelection();
+  const selectedText = selection ? selection.toString() : '';
+  if (!selectedText) return;
+
+  const altered = selectedText.replace(/[a-zA-Z]/g, (ch) => {
+    const isUpper = ch >= 'A' && ch <= 'Z';
+    const base = isUpper ? 65 : 97;
+    return String.fromCharCode(base + Math.floor(Math.random() * 26));
+  });
+
+  e.clipboardData.setData('text/plain', altered);
+  e.preventDefault();
+});
 </script>
 
 </body></html>
