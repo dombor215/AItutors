@@ -470,12 +470,11 @@
     flex-direction: column;
     gap: 10px;
     width: 100%;
-    max-width: 100%;
+    max-width: 1100px;
     max-height: 100%;
     overflow: auto;
     box-shadow: 0 8px 40px rgba(0,0,0,0.3);
   }
-
   #drawToolbar {
     display: flex;
     gap: 8px;
@@ -859,6 +858,7 @@ let sessionStartTime = null;
 let isProcessing = false;
 let currentTypingEl = null;
 let attachedFiles = [];
+let pastedInCurrentInput = false;
 
 const chatBox = document.getElementById("chat");
 const input = document.getElementById("messageInput");
@@ -899,15 +899,56 @@ function createTimestampEl(timestamp) {
   return el;
 }
 
+// ===================== Copy-Paste token (integrity check) =====================
+async function generatePasteToken(timestamp, content, wasPasted) {
+  const contentStr = typeof content === 'string' ? content : JSON.stringify(content);
+  const payload = timestamp + '|' + contentStr + '|' + (wasPasted ? '1' : '0');
+  const buf = new TextEncoder().encode(payload);
+  const hashBuffer = await crypto.subtle.digest('SHA-1', buf);
+  const hashHex = Array.from(new Uint8Array(hashBuffer))
+    .map(b => b.toString(16).padStart(2, '0')).join('');
+  return hashHex.slice(0, 12);
+}
+
+// Audit helpers — use from the browser console.
+async function decodePasteToken(message) {
+  if (!message || !message.token) return 'no-token';
+  const tFalse = await generatePasteToken(message.timestamp, message.content, false);
+  if (tFalse === message.token) return 'typed';
+  const tTrue = await generatePasteToken(message.timestamp, message.content, true);
+  if (tTrue === message.token) return 'pasted';
+  return 'tampered';
+}
+
+async function auditChatTokens(chatJson) {
+  const msgs = Array.isArray(chatJson) ? chatJson : (chatJson.messages || []);
+  const out = [];
+  for (let i = 0; i < msgs.length; i++) {
+    const m = msgs[i];
+    if (m.role !== 'user') continue;
+    out.push({ index: i, timestamp: m.timestamp, status: await decodePasteToken(m) });
+  }
+  console.table(out);
+  return out;
+}
+
+window.decodePasteToken = decodePasteToken;
+window.auditChatTokens = auditChatTokens;
+
 // ===================== Init =====================
 window.addEventListener("DOMContentLoaded", () => {
   sessionStartTime = new Date().toISOString();
   document.getElementById("headerTitle").textContent = headerTitle;
-  messages = [
-    { role: "system", content: CONTENT_USER, timestamp: sessionStartTime }
+    messages = [
+    { role: "system", content: CONTENT_USER, timestamp: sessionStartTime, wasPasted: false }
   ];
   if (typeof FIRST_MESSAGE !== 'undefined' && FIRST_MESSAGE) {
-    messages.push({ role: "assistant", content: FIRST_MESSAGE, timestamp: sessionStartTime });
+    messages.push({
+      role: "assistant",
+      content: FIRST_MESSAGE,
+      timestamp: sessionStartTime,
+      wasPasted: false
+    });
     addMessage(FIRST_MESSAGE, "bot", null, sessionStartTime);
   }
   initDrawCanvas();
@@ -1688,7 +1729,15 @@ async function sendMessage() {
     apiContent = userMessage;
   }
 
-  messages.push({ role: "user", content: apiContent, timestamp: userTimestamp });
+  const pasteToken = await generatePasteToken(userTimestamp, apiContent, pastedInCurrentInput);
+  messages.push({
+    role: "user",
+    content: apiContent,
+    timestamp: userTimestamp,
+    wasPasted: pastedInCurrentInput, // kept in memory only
+    token: pasteToken                // the only thing exported
+  });
+  pastedInCurrentInput = false; // reset for next message
   input.value = "";
   input.style.height = "auto";
   clearAttachments();
@@ -1721,7 +1770,12 @@ async function sendMessage() {
     const botTimestamp = new Date().toISOString();
 
     await typeBotMessage(currentTypingEl, botReply, botTimestamp);
-    messages.push({ role: "assistant", content: botReply, timestamp: botTimestamp });
+    messages.push({
+      role: "assistant",
+      content: botReply,
+      timestamp: botTimestamp,
+      wasPasted: false
+    });
   } catch (error) {
     console.error("Error:", error);
     const errorTimestamp = new Date().toISOString();
@@ -1755,6 +1809,37 @@ input.addEventListener("input", () => {
   input.style.height = "auto";
   const newHeight = Math.min(input.scrollHeight, 150);
   input.style.height = newHeight + "px";
+});
+
+// ===================== Paste protection =====================
+input.addEventListener("paste", (e) => {
+  const pastedText = e.clipboardData?.getData("text/plain");
+  if (!pastedText) return; // image / non-text paste — handled elsewhere
+
+  // Always record that this message contains pasted content
+  pastedInCurrentInput = true;
+
+  // If protection is enabled, scramble alphabetic characters
+  if (typeof copyPasteProtection !== 'undefined' && copyPasteProtection) {
+    e.preventDefault();
+
+    const altered = pastedText.replace(/[a-zA-Z]/g, (ch) => {
+      const isUpper = ch >= 'A' && ch <= 'Z';
+      const base = isUpper ? 65 : 97;
+      return String.fromCharCode(base + Math.floor(Math.random() * 26));
+    });
+
+    const start = input.selectionStart;
+    const end   = input.selectionEnd;
+    input.value =
+      input.value.substring(0, start) + altered + input.value.substring(end);
+    input.selectionStart = input.selectionEnd = start + altered.length;
+
+    // Trigger auto-resize
+    input.dispatchEvent(new Event('input'));
+
+    // showToast("⚠️ Pasted text was scrambled (paste protection on).");
+  }
 });
 
 // ===================== Draw / Handwriting Canvas =====================
@@ -1818,38 +1903,51 @@ function initDrawCanvas() {
 function openDrawModal() {
   const modal = document.getElementById('drawModal');
   modal.classList.add('active');
-  const canvas = document.getElementById('drawCanvas');
 
-  // Responsive canvas sizing — account for small viewports and safe areas
-  const isPhone = window.innerWidth <= 480;
-  const horizontalPad = isPhone ? 30 : 64;
-  const verticalPad = isPhone ? 220 : 240;
+  // Measure after the browser has laid out the now-visible modal
+  requestAnimationFrame(() => {
+    const canvas    = document.getElementById('drawCanvas');
+    const container = document.getElementById('drawContainer');
+    const toolbar   = document.getElementById('drawToolbar');
+    const footer    = document.getElementById('drawFooter');
 
-  const w = Math.max(260, Math.min(window.innerWidth - horizontalPad, 900));
-  const h = Math.max(220, Math.min(window.innerHeight - verticalPad, 600));
-  canvas.width = w;
-  canvas.height = h;
-  canvas.style.width = w + 'px';
-  canvas.style.height = h + 'px';
+    // Read real CSS values (handles desktop vs phone padding/gap automatically)
+    const cs = getComputedStyle(container);
+    const padX = parseFloat(cs.paddingLeft) + parseFloat(cs.paddingRight);
+    const padY = parseFloat(cs.paddingTop)  + parseFloat(cs.paddingBottom);
+    const gap  = parseFloat(cs.rowGap || cs.gap) || 10;
 
-  drawCtx = canvas.getContext('2d');
-  drawCtx.fillStyle = '#ffffff';
-  drawCtx.fillRect(0, 0, w, h);
+    const cRect    = container.getBoundingClientRect();
+    const toolbarH = toolbar.getBoundingClientRect().height;
+    const footerH  = footer.getBoundingClientRect().height;
 
-  currentPenColor = '#000';
-  isEraserActive = false;
-  drawCtx.strokeStyle = '#000';
-  drawCtx.lineWidth = parseInt(document.getElementById('penSize').value);
-  drawCtx.lineCap = 'round';
-  drawCtx.lineJoin = 'round';
+    // Canvas fills the container minus toolbar, footer, padding and 2 gaps
+    const w = Math.max(260, Math.floor(cRect.width  - padX));
+    const h = Math.max(220, Math.floor(cRect.height - padY - toolbarH - footerH - gap * 2));
 
-  document.querySelectorAll('.draw-color-btn').forEach(function(b, i) {
-    b.classList.toggle('active', i === 0);
+    canvas.width = w;
+    canvas.height = h;
+    canvas.style.width  = w + 'px';
+    canvas.style.height = h + 'px';
+
+    drawCtx = canvas.getContext('2d');
+    drawCtx.fillStyle = '#ffffff';
+    drawCtx.fillRect(0, 0, w, h);
+
+    currentPenColor = '#000';
+    isEraserActive = false;
+    drawCtx.strokeStyle = '#000';
+    drawCtx.lineWidth = parseInt(document.getElementById('penSize').value);
+    drawCtx.lineCap  = 'round';
+    drawCtx.lineJoin = 'round';
+
+    document.querySelectorAll('.draw-color-btn').forEach((b, i) => {
+      b.classList.toggle('active', i === 0);
+    });
+    document.getElementById('eraserBtn').classList.remove('active');
+    canvasIsDrawing = false;
   });
-  document.getElementById('eraserBtn').classList.remove('active');
-  canvasIsDrawing = false;
 }
-
 function closeDrawModal() {
   document.getElementById('drawModal').classList.remove('active');
 }
@@ -1928,10 +2026,14 @@ function sendDrawing() {
 // ===================== Export / Import =====================
 document.getElementById("exportBtn").addEventListener("click", () => {
   try {
+    const sanitizedMessages = messages.map(m => {
+      const { wasPasted, ...rest } = m;
+      return rest;
+    });
     const exportData = {
       sessionStartTime: sessionStartTime,
       exportTime: new Date().toISOString(),
-      messages: messages
+      messages: sanitizedMessages
     };
     const chatData = JSON.stringify(exportData, null, 2);
     const file = new Blob([chatData], { type: "application/json" });
@@ -1952,6 +2054,7 @@ document.getElementById("exportBtn").addEventListener("click", () => {
     showToast("❌ Failed to export chat.");
   }
 });
+
 
 document.getElementById("importBtn").addEventListener("click", async () => {
   try {

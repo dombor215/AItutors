@@ -1,4 +1,4 @@
-<!DOCTYPE html><html lang="sk"><head><meta name="x-poe-datastore-behavior" content="local_only">
+<!DOCTYPE html><html lang="sk"><head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Chat Export Viewer</title>
@@ -12,10 +12,11 @@ window.MathJax = {
 <script defer="" src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-chtml.js"></script>
 <style>
 :root {
-  --primary: #4A90E2;
-  --secondary: #357ABD;
+  --primary: #5cc336;
+  --secondary: #53a735;
   --sidebar-w: 360px;
   --header-h: 56px;
+  --footer-h: 28px;
   --bg: #f0f2f5;
   --card-bg: #fff;
   --border: #e0e0e0;
@@ -34,11 +35,22 @@ body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helv
 header { height: var(--header-h); background: linear-gradient(135deg, var(--primary), var(--secondary)); color: white; display: flex; align-items: center; justify-content: space-between; padding: 0 20px; box-shadow: 0 2px 12px rgba(0,0,0,0.15); z-index: 100; flex-shrink: 0; }
 header h1 { font-size: 18px; font-weight: 700; display: flex; align-items: center; gap: 8px; }
 .header-actions { display: flex; gap: 8px; align-items: center; }
-.header-btn { background: rgba(255,255,255,0.18); color: white; border: 1px solid rgba(255,255,255,0.25); border-radius: 8px; padding: 7px 14px; font-size: 13px; font-weight: 600; cursor: pointer; transition: background 0.15s; white-space: nowrap; }
+.header-btn { background: rgba(255,255,255,0.18); color: white; border: 1px solid rgba(255,255,255,0.25); border-radius: 8px; padding: 7px 14px; font-size: 13px; font-weight: 600; cursor: pointer; transition: background 0.15s; white-space: nowrap; text-decoration: none; display: inline-flex; align-items: center; gap: 4px; }
 .header-btn:hover { background: rgba(255,255,255,0.3); }
 .header-btn:disabled { opacity: 0.5; cursor: not-allowed; }
 .header-btn.danger:hover:not(:disabled) { background: rgba(231,76,60,0.7); }
+.header-btn.back-link { background: rgba(255,255,255,0.28); border-color: rgba(255,255,255,0.4); }
 #sidebarToggle { display: none; background: none; border: none; color: white; font-size: 22px; cursor: pointer; padding: 4px 8px; }
+
+/* ===== Toggle Switch (Show metadata) ===== */
+.meta-toggle { display: inline-flex; align-items: center; gap: 8px; padding: 4px 12px; background: rgba(255,255,255,0.15); border: 1px solid rgba(255,255,255,0.25); border-radius: 8px; font-size: 12px; font-weight: 600; cursor: pointer; user-select: none; transition: background 0.15s; color: white; }
+.meta-toggle:hover { background: rgba(255,255,255,0.25); }
+.meta-toggle input { display: none; }
+.meta-toggle .switch { position: relative; width: 32px; height: 18px; background: rgba(0,0,0,0.25); border-radius: 10px; transition: background 0.2s; flex-shrink: 0; }
+.meta-toggle .switch::after { content: ''; position: absolute; top: 2px; left: 2px; width: 14px; height: 14px; background: white; border-radius: 50%; transition: transform 0.2s; box-shadow: 0 1px 3px rgba(0,0,0,0.3); }
+.meta-toggle input:checked + .switch { background: #2ecc71; }
+.meta-toggle input:checked + .switch::after { transform: translateX(14px); }
+.meta-toggle .label-icon { font-size: 14px; }
 
 /* ===== App Body ===== */
 .app-body { flex: 1; display: flex; overflow: hidden; }
@@ -48,9 +60,11 @@ header h1 { font-size: 18px; font-weight: 700; display: flex; align-items: cente
 .sidebar-header { padding: 12px; border-bottom: 1px solid var(--border); }
 .sidebar-header input { width: 100%; padding: 9px 12px; border: 2px solid var(--border); border-radius: 8px; font-size: 14px; outline: none; font-family: inherit; transition: border-color 0.15s; }
 .sidebar-header input:focus { border-color: var(--primary); }
-.stats-bar { padding: 12px; border-bottom: 1px solid var(--border); display: flex; gap: 8px; flex-wrap: wrap; background: #fafbfc; }
+.stats-bar { padding: 12px; border-bottom: 1px solid var(--border); display: flex; gap: 6px; flex-wrap: wrap; background: #fafbfc; }
 .stat-chip { background: white; border: 1px solid var(--border); border-radius: 8px; padding: 6px 10px; font-size: 12px; font-weight: 600; display: flex; align-items: center; gap: 4px; }
 .stat-chip .stat-num { font-size: 16px; }
+.stat-chip.pasted { background: #fff3cd; border-color: #ffeeba; color: #856404; }
+.stat-chip.tampered { background: #f8d7da; border-color: #f5c6cb; color: #721c24; }
 .sort-row { padding: 8px 12px; border-bottom: 1px solid var(--border); display: flex; align-items: center; gap: 8px; background: #fafbfc; }
 .sort-row label { font-size: 12px; color: var(--text-secondary); font-weight: 600; white-space: nowrap; }
 .sort-row select { flex: 1; padding: 4px 8px; border: 1px solid var(--border); border-radius: 6px; font-size: 12px; font-family: inherit; outline: none; background: white; }
@@ -60,9 +74,16 @@ header h1 { font-size: 18px; font-weight: 700; display: flex; align-items: cente
 .conv-card { padding: 12px; border-radius: 10px; border: 2px solid transparent; background: #fafbfc; cursor: pointer; transition: all 0.15s; position: relative; }
 .conv-card:hover { background: #eef3fa; border-color: #c5d9f0; }
 .conv-card.selected { background: #e0edff; border-color: var(--primary); }
-.conv-card .conv-name { font-size: 14px; font-weight: 600; color: var(--text); margin-bottom: 4px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.conv-card .conv-name { font-size: 14px; font-weight: 600; color: var(--text); margin-bottom: 4px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; padding-right: 22px; }
 .conv-card .conv-meta { font-size: 12px; color: var(--text-secondary); display: flex; gap: 12px; flex-wrap: wrap; margin-bottom: 6px; }
 .conv-card .conv-meta span { display: flex; align-items: center; gap: 3px; }
+.conv-card .conv-audit { display: flex; gap: 6px; flex-wrap: wrap; margin-top: 6px; }
+.conv-card .audit-pill { font-size: 10px; font-weight: 700; padding: 2px 7px; border-radius: 10px; text-transform: uppercase; letter-spacing: 0.3px; }
+.conv-card .audit-pill.pasted { background: #fff3cd; color: #856404; }
+.conv-card .audit-pill.tampered { background: #f8d7da; color: #721c24; }
+.conv-card .audit-pill.no-token { background: #e2e3e5; color: #6c757d; }
+.conv-card .audit-pill.wpm { background: #d6e9ff; color: #0b5ed7; }
+.conv-card .audit-pill.words { background: #e6dcff; color: #5a3eaa; }
 .conv-card .conv-remove { position: absolute; top: 8px; right: 8px; background: none; border: none; color: #ccc; font-size: 14px; cursor: pointer; padding: 2px 6px; border-radius: 4px; transition: all 0.15s; line-height: 1; }
 .conv-card .conv-remove:hover { color: #e74c3c; background: #fde8e8; }
 
@@ -85,11 +106,35 @@ header h1 { font-size: 18px; font-weight: 700; display: flex; align-items: cente
 .conv-header h2 { font-size: 16px; font-weight: 700; color: var(--text); margin-bottom: 6px; }
 .conv-header-meta { display: flex; gap: 16px; flex-wrap: wrap; font-size: 13px; color: var(--text-secondary); align-items: center; }
 .conv-header-meta span { display: flex; align-items: center; gap: 4px; }
+.audit-summary { display: flex; gap: 8px; flex-wrap: wrap; margin-top: 8px; }
+.audit-badge { font-size: 12px; font-weight: 600; padding: 4px 10px; border-radius: 8px; display: inline-flex; align-items: center; gap: 4px; }
+.audit-badge.typed { background: #d4edda; color: #155724; }
+.audit-badge.pasted { background: #fff3cd; color: #856404; }
+.audit-badge.tampered { background: #f8d7da; color: #721c24; }
+.audit-badge.no-token { background: #e2e3e5; color: #6c757d; }
+.audit-badge.auditing { background: #cce5ff; color: #004085; }
+
+.stats-row { display: flex; gap: 8px; flex-wrap: wrap; margin-top: 8px; padding-top: 8px; border-top: 1px dashed #e0e0e0; align-items: center; }
+.stats-row-label { font-size: 12px; font-weight: 700; color: var(--text-secondary); text-transform: uppercase; letter-spacing: 0.4px; margin-right: 4px; }
+.stats-note { font-size: 11px; color: #888; margin-left: auto; font-style: italic; }
+
+.wpm-stat { font-size: 12px; font-weight: 600; padding: 4px 10px; border-radius: 8px; background: #e7f1ff; color: #0b5ed7; display: inline-flex; align-items: center; gap: 4px; border: 1px solid #cfe2ff; }
+.wpm-stat .stat-val { font-weight: 700; font-size: 13px; }
+.wpm-stat.empty { background: #f3f3f3; color: #888; border-color: #e0e0e0; }
+
+.word-stat { font-size: 12px; font-weight: 600; padding: 4px 10px; border-radius: 8px; background: #f1ebff; color: #5a3eaa; display: inline-flex; align-items: center; gap: 4px; border: 1px solid #ddd0fa; }
+.word-stat .stat-val { font-weight: 700; font-size: 13px; }
+.word-stat.tutor { background: #fff0e6; color: #b8580f; border-color: #ffd9bd; }
+.word-stat.student { background: #e6f4ec; color: #1e7c47; border-color: #c4e3d2; }
+
 .msg-scroll { flex: 1; overflow-y: auto; padding: 24px; display: flex; flex-direction: column; gap: 14px; }
 
 /* Messages */
 .msg { padding: 14px 18px; border-radius: var(--radius); max-width: 78%; box-shadow: var(--shadow); line-height: 1.6; font-size: 15px; word-wrap: break-word; animation: fadeIn 0.2s ease; }
-.msg.user-msg { background: var(--user-bg); align-self: flex-end; border-bottom-right-radius: 4px; white-space: pre-wrap; }
+.msg.user-msg { background: var(--user-bg); align-self: flex-end; border-bottom-right-radius: 4px; white-space: pre-wrap; position: relative; }
+.msg.user-msg.status-pasted { border-right: 4px solid #ffc107; background: linear-gradient(to left, #fff8e1 0%, var(--user-bg) 12px); }
+.msg.user-msg.status-tampered { border-right: 4px solid #dc3545; background: linear-gradient(to left, #fde8ea 0%, var(--user-bg) 12px); }
+.msg.user-msg.status-no-token { border-right: 4px solid #adb5bd; }
 .msg.bot-msg { background: var(--bot-bg); border: 1px solid var(--border); align-self: flex-start; border-bottom-left-radius: 4px; }
 .msg.system-msg { background: var(--system-bg); border: 1px solid #f0e6c0; align-self: stretch; max-width: 100%; font-size: 13px; border-radius: 8px; }
 .system-toggle { cursor: pointer; user-select: none; font-weight: 600; color: #b08c20; display: flex; align-items: center; gap: 6px; }
@@ -97,12 +142,22 @@ header h1 { font-size: 18px; font-weight: 700; display: flex; align-items: cente
 .system-content { margin-top: 10px; max-height: 300px; overflow-y: auto; white-space: pre-wrap; color: #555; font-size: 12px; line-height: 1.5; border-top: 1px solid #efe0b0; padding-top: 10px; }
 .system-content.collapsed { display: none; }
 
-.msg-timestamp { font-size: 11px; margin-top: 8px; opacity: 0.7; user-select: none; letter-spacing: 0.2px; }
-.user-msg .msg-timestamp { text-align: right; color: #5a8a6a; }
-.bot-msg .msg-timestamp { text-align: left; color: #aaa; }
-.system-msg .msg-timestamp { text-align: left; color: #b0a060; }
+.msg-timestamp { font-size: 11px; margin-top: 8px; opacity: 0.7; user-select: none; letter-spacing: 0.2px; display: flex; gap: 10px; align-items: center; flex-wrap: wrap; }
+.user-msg .msg-timestamp { justify-content: flex-end; color: #5a8a6a; }
+.bot-msg .msg-timestamp { color: #aaa; }
+.system-msg .msg-timestamp { color: #b0a060; }
+.msg-wpm { font-size: 11px; font-weight: 700; padding: 2px 8px; border-radius: 8px; background: #e7f1ff; color: #0b5ed7; border: 1px solid #cfe2ff; cursor: help; letter-spacing: 0.2px; }
+.msg-wpm.na { background: #f3f3f3; color: #888; border-color: #e0e0e0; }
+.msg-wpm.pasted-info { background: #fff3cd; color: #856404; border-color: #ffeeba; }
+.msg-words { font-size: 11px; font-weight: 700; padding: 2px 8px; border-radius: 8px; background: #f1ebff; color: #5a3eaa; border: 1px solid #ddd0fa; cursor: help; letter-spacing: 0.2px; }
 
-.msg-role { font-size: 11px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.5px; margin-bottom: 6px; opacity: 0.6; }
+.msg-role { font-size: 11px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.5px; margin-bottom: 6px; opacity: 0.8; display: flex; align-items: center; gap: 6px; flex-wrap: wrap; }
+
+.msg-status-badge { font-size: 10px; font-weight: 700; padding: 2px 7px; border-radius: 8px; text-transform: uppercase; letter-spacing: 0.4px; opacity: 1; cursor: help; }
+.msg-status-badge.typed { background: #c3e6cb; color: #155724; }
+.msg-status-badge.pasted { background: #ffeaa7; color: #856404; }
+.msg-status-badge.tampered { background: #f5c6cb; color: #721c24; }
+.msg-status-badge.no-token { background: #d6d8db; color: #383d41; }
 
 /* Bot markdown styling */
 .bot-msg h1, .bot-msg h2, .bot-msg h3, .bot-msg h4 { margin: 14px 0 6px 0; color: var(--secondary); line-height: 1.3; }
@@ -121,12 +176,17 @@ header h1 { font-size: 18px; font-weight: 700; display: flex; align-items: cente
 .bot-msg hr { border: none; border-top: 1px solid #e0e0e0; margin: 12px 0; }
 .bot-msg img { max-width: 100%; border-radius: 8px; margin: 8px 0; }
 
+/* ===== Footer ===== */
+footer { height: var(--footer-h); background: #2b2b2b; color: #ccc; font-size: 11px; display: flex; align-items: center; justify-content: center; flex-shrink: 0; padding: 0 12px; text-align: center; letter-spacing: 0.2px; }
+footer a { color: #9bd17a; text-decoration: none; }
+footer a:hover { text-decoration: underline; }
+
 /* ===== Drop overlay ===== */
 #dropOverlay { display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(74,144,226,0.12); border: 3px dashed var(--primary); z-index: 500; justify-content: center; align-items: center; font-size: 22px; color: var(--primary); font-weight: 700; pointer-events: none; }
 #dropOverlay.active { display: flex; }
 
 /* ===== Toast ===== */
-#toast { position: fixed; bottom: 24px; left: 50%; transform: translateX(-50%); background: rgba(30,30,30,0.92); color: white; padding: 10px 22px; border-radius: 10px; font-size: 14px; display: none; z-index: 1001; max-width: 90%; text-align: center; box-shadow: 0 4px 16px rgba(0,0,0,0.25); }
+#toast { position: fixed; bottom: 50px; left: 50%; transform: translateX(-50%); background: rgba(30,30,30,0.92); color: white; padding: 10px 22px; border-radius: 10px; font-size: 14px; display: none; z-index: 1001; max-width: 90%; text-align: center; box-shadow: 0 4px 16px rgba(0,0,0,0.25); }
 #toast.show { display: block; animation: toastIn 0.25s ease; }
 
 /* ===== Image Modal ===== */
@@ -142,6 +202,27 @@ input[type="file"] { display: none; }
 /* ===== Empty state ===== */
 .empty-viewer { flex: 1; display: flex; align-items: center; justify-content: center; color: #aaa; font-size: 15px; }
 
+/* ===== HIDE METADATA MODE ===== */
+/* When body has .hide-meta class, all audit/stat/metric chrome is hidden */
+body.hide-meta .stats-bar,
+body.hide-meta .conv-card .conv-audit,
+body.hide-meta .audit-summary,
+body.hide-meta .stats-row,
+body.hide-meta .msg-status-badge,
+body.hide-meta .msg-wpm,
+body.hide-meta .msg-words {
+  display: none !important;
+}
+/* Also remove the colored side-borders & gradients on messages when hidden */
+body.hide-meta .msg.user-msg.status-pasted,
+body.hide-meta .msg.user-msg.status-tampered,
+body.hide-meta .msg.user-msg.status-no-token {
+  border-right: none;
+  background: var(--user-bg);
+}
+/* Also hide audit-related sort options become irrelevant — keep sort but
+   the toggle is purely visual; data still computed underneath. */
+
 /* ===== Responsive ===== */
 @media (max-width: 840px) {
   :root { --sidebar-w: 300px; }
@@ -149,14 +230,19 @@ input[type="file"] { display: none; }
 }
 @media (max-width: 680px) {
   #sidebarToggle { display: block; }
-  .sidebar { position: fixed; top: var(--header-h); left: 0; bottom: 0; z-index: 200; transform: translateX(-100%); box-shadow: 4px 0 20px rgba(0,0,0,0.15); width: 85vw; max-width: 360px; }
+  .sidebar { position: fixed; top: var(--header-h); left: 0; bottom: var(--footer-h); z-index: 200; transform: translateX(-100%); box-shadow: 4px 0 20px rgba(0,0,0,0.15); width: 85vw; max-width: 360px; }
   .sidebar.open { transform: translateX(0); }
-  .sidebar-backdrop { display: none; position: fixed; top: var(--header-h); left: 0; right: 0; bottom: 0; background: rgba(0,0,0,0.3); z-index: 199; }
+  .sidebar-backdrop { display: none; position: fixed; top: var(--header-h); left: 0; right: 0; bottom: var(--footer-h); background: rgba(0,0,0,0.3); z-index: 199; }
   .sidebar-backdrop.active { display: block; }
   .header-actions .desktop-only { display: none; }
+  .header-btn.back-link { padding: 6px 10px; font-size: 12px; }
+  .meta-toggle { padding: 4px 8px; font-size: 11px; }
+  .meta-toggle .label-text { display: none; }
   .msg { max-width: 95%; }
   .conv-header { padding: 12px 16px; }
   .msg-scroll { padding: 16px; }
+  .stats-note { display: none; }
+  footer { font-size: 10px; }
 }
 </style>
 </head>
@@ -165,9 +251,16 @@ input[type="file"] { display: none; }
 <header>
   <div style="display:flex;align-items:center;gap:8px;">
     <button id="sidebarToggle" onclick="toggleSidebar()">☰</button>
-    <h1>📚 DGS Chat Export Viewer</h1>
+    <h1>📚 Chat Export Viewer</h1>
   </div>
   <div class="header-actions">
+    <label class="meta-toggle " title="Toggle visibility of statistics, metrics, and per-message badges (paste/tampered/WPM/word counts)">
+      <input type="checkbox" id="metaToggle" checked="" onchange="toggleMetadata(this.checked)">
+      <span class="switch"></span>
+      <span class="label-icon">📊</span>
+      <span class="label-text">Show metadata</span>
+    </label>
+    <a class="header-btn desktop-only" href="../index.html" title="Back to Chat" target="_blank">← Back to Chat</a>
     <button class="header-btn" id="addFilesBtn" onclick="document.getElementById('fileInput').click()">📁 Add Files</button>
     <button class="header-btn desktop-only" id="exportCsvBtn" onclick="exportCSV()" disabled="">📊 Export CSV</button>
     <button class="header-btn danger desktop-only" id="clearAllBtn" onclick="clearAll()" disabled="">🗑️ Clear All</button>
@@ -187,6 +280,12 @@ input[type="file"] { display: none; }
         <option value="name-desc">Name Z→A</option>
         <option value="date-asc">Date ↑</option>
         <option value="date-desc" selected="">Date ↓</option>
+        <option value="tampered-desc">Most tampered</option>
+        <option value="pasted-desc">Most pasted</option>
+        <option value="wpm-desc">Highest avg WPM</option>
+        <option value="wpm-asc">Lowest avg WPM</option>
+        <option value="studentwords-desc">Most student words</option>
+        <option value="tutorwords-desc">Most tutor words</option>
       </select>
     </div>
     <div class="conv-list" id="convList"></div>
@@ -205,6 +304,10 @@ input[type="file"] { display: none; }
   </main>
 </div>
 
+<footer>
+  © 2026 Dominik Borovský &amp; Jozef Hanč, v1.4
+</footer>
+
 <input type="file" id="fileInput" multiple="" accept=".json">
 <div id="dropOverlay">📁 Drop JSON files here</div>
 <div id="toast"></div>
@@ -214,6 +317,7 @@ input[type="file"] { display: none; }
 // ==================== State ====================
 let conversations = [];
 let selectedId = null;
+let metadataVisible = true; // controlled by toggle
 
 // ==================== Helpers ====================
 function getMessageText(content) {
@@ -229,6 +333,171 @@ function getMessageImages(content) {
   return content.filter(c => c.type === 'image_url').map(c => c.image_url?.url || '');
 }
 
+function countWords(text) {
+  if (!text) return 0;
+  const trimmed = text.trim();
+  if (!trimmed) return 0;
+  return trimmed.split(/\s+/).filter(w => w.length > 0).length;
+}
+
+// ==================== Metadata Toggle ====================
+function toggleMetadata(visible) {
+  metadataVisible = visible;
+  if (visible) {
+    document.body.classList.remove('hide-meta');
+    showToast('📊 Metadata shown');
+  } else {
+    document.body.classList.add('hide-meta');
+    showToast('🙈 Metadata hidden — clean view');
+  }
+}
+
+// ==================== Copy-Paste token (integrity check) ====================
+async function generatePasteToken(timestamp, content, wasPasted) {
+  const contentStr = typeof content === 'string' ? content : JSON.stringify(content);
+  const payload = timestamp + '|' + contentStr + '|' + (wasPasted ? '1' : '0');
+  const buf = new TextEncoder().encode(payload);
+  const hashBuffer = await crypto.subtle.digest('SHA-1', buf);
+  const hashHex = Array.from(new Uint8Array(hashBuffer))
+    .map(b => b.toString(16).padStart(2, '0')).join('');
+  return hashHex.slice(0, 12);
+}
+
+async function decodePasteToken(message) {
+  if (!message || !message.token) return 'no-token';
+  const tFalse = await generatePasteToken(message.timestamp, message.content, false);
+  if (tFalse === message.token) return 'typed';
+  const tTrue = await generatePasteToken(message.timestamp, message.content, true);
+  if (tTrue === message.token) return 'pasted';
+  return 'tampered';
+}
+
+async function auditConversation(conv) {
+  const audit = { typed: 0, pasted: 0, tampered: 0, noToken: 0, total: 0 };
+  for (const m of conv.messages) {
+    if (m.role !== 'user') continue;
+    audit.total++;
+    const status = await decodePasteToken(m);
+    m._status = status;
+    if (status === 'typed') audit.typed++;
+    else if (status === 'pasted') audit.pasted++;
+    else if (status === 'tampered') audit.tampered++;
+    else audit.noToken++;
+  }
+  conv.audit = audit;
+  computeWpmStats(conv);
+  return audit;
+}
+
+// ==================== WPM & Word-Count Computation ====================
+function computeMessageWpm(messages) {
+  for (let i = 0; i < messages.length; i++) {
+    const m = messages[i];
+    const text = getMessageText(m.content);
+    const wc = countWords(text);
+    m._wordCount = wc;
+
+    if (m.role !== 'user') continue;
+    m._wpm = null;
+    m._elapsedSec = null;
+
+    if (!m.timestamp) continue;
+    let prevTs = null;
+    for (let j = i - 1; j >= 0; j--) {
+      if (messages[j].timestamp) { prevTs = messages[j].timestamp; break; }
+    }
+    if (!prevTs) continue;
+    const elapsedMs = new Date(m.timestamp).getTime() - new Date(prevTs).getTime();
+    if (!isFinite(elapsedMs) || elapsedMs <= 0) continue;
+    m._elapsedSec = elapsedMs / 1000;
+    if (wc <= 0) continue;
+    const minutes = elapsedMs / 60000;
+    m._wpm = wc / minutes;
+  }
+}
+
+function computeWpmStats(conv) {
+  const wpmSamples = [];
+  for (const m of conv.messages) {
+    if (m.role !== 'user') continue;
+    if (typeof m._wpm !== 'number' || !isFinite(m._wpm)) continue;
+    if (m._status === 'pasted') continue;
+    wpmSamples.push(m._wpm);
+  }
+  conv.wpmStats = computeStats(wpmSamples);
+}
+
+function computeWordStats(conv) {
+  const studentWords = [];
+  const tutorWords = [];
+  let studentTotal = 0, tutorTotal = 0;
+  for (const m of conv.messages) {
+    const wc = m._wordCount || 0;
+    if (m.role === 'user') {
+      studentWords.push(wc);
+      studentTotal += wc;
+    } else if (m.role === 'assistant') {
+      tutorWords.push(wc);
+      tutorTotal += wc;
+    }
+  }
+  conv.wordStats = {
+    studentTotal,
+    tutorTotal,
+    student: computeStats(studentWords),
+    tutor: computeStats(tutorWords)
+  };
+}
+
+function computeStats(arr) {
+  if (!arr || arr.length === 0) return { count: 0, mean: null, median: null, std: null, min: null, max: null, sum: 0 };
+  const n = arr.length;
+  const sum = arr.reduce((s, v) => s + v, 0);
+  const mean = sum / n;
+  const sorted = [...arr].sort((a, b) => a - b);
+  const median = n % 2 === 1 ? sorted[(n - 1) / 2] : (sorted[n/2 - 1] + sorted[n/2]) / 2;
+  const variance = n > 1 ? arr.reduce((s, v) => s + (v - mean) ** 2, 0) / (n - 1) : 0;
+  const std = Math.sqrt(variance);
+  return { count: n, mean, median, std, min: sorted[0], max: sorted[n-1], sum };
+}
+
+function formatWpm(v) {
+  if (v === null || v === undefined || !isFinite(v)) return '—';
+  if (v >= 100) return v.toFixed(0);
+  return v.toFixed(1);
+}
+
+function formatNum(v, decimals) {
+  if (v === null || v === undefined || !isFinite(v)) return '—';
+  decimals = decimals === undefined ? 1 : decimals;
+  if (Number.isInteger(v)) return v.toString();
+  return v.toFixed(decimals);
+}
+
+function formatElapsed(sec) {
+  if (sec === null || !isFinite(sec)) return '';
+  if (sec < 60) return sec.toFixed(1) + 's';
+  const mins = Math.floor(sec / 60);
+  const s = Math.round(sec - mins * 60);
+  return mins + 'm ' + s + 's';
+}
+
+// Console helper kept for parity with original spec
+async function auditChatTokens(chatJson) {
+  const msgs = Array.isArray(chatJson) ? chatJson : (chatJson.messages || []);
+  const out = [];
+  for (let i = 0; i < msgs.length; i++) {
+    const m = msgs[i];
+    if (m.role !== 'user') continue;
+    out.push({ index: i, timestamp: m.timestamp, status: await decodePasteToken(m) });
+  }
+  console.table(out);
+  return out;
+}
+window.decodePasteToken = decodePasteToken;
+window.auditChatTokens = auditChatTokens;
+window.generatePasteToken = generatePasteToken;
+
 // ==================== Parse ====================
 function parseConversation(json, filename) {
   const data = typeof json === 'string' ? JSON.parse(json) : json;
@@ -239,7 +508,6 @@ function parseConversation(json, filename) {
   let sessionStart = data.sessionStartTime || null;
   let exportTime = data.exportTime || null;
 
-  // Duration
   let durationStr = '';
   const allTimestamps = msgs.map(m => m.timestamp).filter(Boolean).map(t => new Date(t).getTime()).filter(t => !isNaN(t));
   if (allTimestamps.length >= 2) {
@@ -248,7 +516,7 @@ function parseConversation(json, filename) {
     durationStr = mins < 60 ? mins + ' min' : Math.floor(mins/60) + 'h ' + (mins%60) + 'min';
   }
 
-  return {
+  const conv = {
     id: filename + '_' + Date.now() + '_' + Math.random().toString(36).slice(2,6),
     filename: filename,
     sessionStart,
@@ -257,8 +525,16 @@ function parseConversation(json, filename) {
     userCount: userMsgs.length,
     botCount: botMsgs.length,
     totalCount: msgs.filter(m => m.role !== 'system').length,
-    duration: durationStr
+    duration: durationStr,
+    audit: null,
+    wpmStats: null,
+    wordStats: null
   };
+
+  computeMessageWpm(conv.messages);
+  computeWordStats(conv);
+  computeWpmStats(conv);
+  return conv;
 }
 
 // ==================== File Upload ====================
@@ -269,12 +545,14 @@ document.getElementById('fileInput').addEventListener('change', async (e) => {
 
 async function handleFiles(files) {
   let added = 0;
+  const newConvs = [];
   for (const file of files) {
     if (!file.name.endsWith('.json')) { showToast('⚠️ Skipped non-JSON: ' + file.name); continue; }
     try {
       const text = await file.text();
       const conv = parseConversation(text, file.name);
       conversations.push(conv);
+      newConvs.push(conv);
       added++;
     } catch (err) {
       console.error('Parse error:', file.name, err);
@@ -282,9 +560,31 @@ async function handleFiles(files) {
     }
   }
   if (added > 0) {
-    showToast('✅ Loaded ' + added + ' conversation' + (added > 1 ? 's' : ''));
+    showToast('✅ Loaded ' + added + ' conversation' + (added > 1 ? 's' : '') + ' — auditing tokens…');
     updateUI();
     if (!selectedId && conversations.length > 0) selectConversation(conversations[0].id);
+
+    await Promise.all(newConvs.map(async (c) => {
+      try { await auditConversation(c); } catch (err) { console.error('Audit error for', c.filename, err); }
+    }));
+
+    renderStats();
+    renderConvList();
+    if (newConvs.some(c => c.id === selectedId)) renderViewer();
+
+    const totals = conversations.reduce((acc, c) => {
+      if (!c.audit) return acc;
+      acc.pasted += c.audit.pasted;
+      acc.tampered += c.audit.tampered;
+      return acc;
+    }, { pasted: 0, tampered: 0 });
+    if (totals.tampered > 0) {
+      showToast('⚠️ Audit done — ' + totals.tampered + ' tampered, ' + totals.pasted + ' pasted message(s) detected', 5000);
+    } else if (totals.pasted > 0) {
+      showToast('✅ Audit done — ' + totals.pasted + ' pasted message(s), no tampering detected', 4000);
+    } else {
+      showToast('✅ Audit done — all messages verified clean', 3000);
+    }
   }
 }
 
@@ -295,7 +595,6 @@ document.addEventListener('dragleave', e => { e.preventDefault(); dragCounter--;
 document.addEventListener('dragover', e => e.preventDefault());
 document.addEventListener('drop', async e => { e.preventDefault(); dragCounter = 0; document.getElementById('dropOverlay').classList.remove('active'); if (e.dataTransfer?.files) await handleFiles(e.dataTransfer.files); });
 
-// Upload box specific drag
 const uploadBox = document.getElementById('uploadBox');
 if (uploadBox) {
   uploadBox.addEventListener('dragover', e => { e.preventDefault(); e.stopPropagation(); uploadBox.classList.add('dragover'); });
@@ -316,7 +615,24 @@ function updateUI() {
 function renderStats() {
   const bar = document.getElementById('statsBar');
   if (conversations.length === 0) { bar.innerHTML = ''; return; }
-  bar.innerHTML = '<div class="stat-chip"><span class="stat-num">' + conversations.length + '</span> total conversations</div>';
+
+  let totalPasted = 0, totalTampered = 0, totalNoToken = 0, audited = 0;
+  conversations.forEach(c => {
+    if (c.audit) {
+      audited++;
+      totalPasted += c.audit.pasted;
+      totalTampered += c.audit.tampered;
+      totalNoToken += c.audit.noToken;
+    }
+  });
+
+  let html = '<div class="stat-chip"><span class="stat-num">' + conversations.length + '</span> conversations</div>';
+  if (audited > 0) {
+    if (totalPasted > 0) html += '<div class="stat-chip pasted" title="Pasted user messages">📋 <span class="stat-num">' + totalPasted + '</span> pasted</div>';
+    if (totalTampered > 0) html += '<div class="stat-chip tampered" title="Tampered user messages">⚠️ <span class="stat-num">' + totalTampered + '</span> tampered</div>';
+    if (totalNoToken > 0) html += '<div class="stat-chip" title="User messages with no integrity token">❓ <span class="stat-num">' + totalNoToken + '</span> no-token</div>';
+  }
+  bar.innerHTML = html;
 }
 
 function getFilteredSorted() {
@@ -337,6 +653,15 @@ function getFilteredSorted() {
     let cmp = 0;
     if (field === 'name') cmp = a.filename.localeCompare(b.filename);
     else if (field === 'date') cmp = (a.sessionStart || '').localeCompare(b.sessionStart || '');
+    else if (field === 'tampered') cmp = ((a.audit && a.audit.tampered) || 0) - ((b.audit && b.audit.tampered) || 0);
+    else if (field === 'pasted') cmp = ((a.audit && a.audit.pasted) || 0) - ((b.audit && b.audit.pasted) || 0);
+    else if (field === 'wpm') {
+      const am = (a.wpmStats && a.wpmStats.mean) || -1;
+      const bm = (b.wpmStats && b.wpmStats.mean) || -1;
+      cmp = am - bm;
+    }
+    else if (field === 'studentwords') cmp = ((a.wordStats && a.wordStats.studentTotal) || 0) - ((b.wordStats && b.wordStats.studentTotal) || 0);
+    else if (field === 'tutorwords') cmp = ((a.wordStats && a.wordStats.tutorTotal) || 0) - ((b.wordStats && b.wordStats.tutorTotal) || 0);
     return dir === 'desc' ? -cmp : cmp;
   });
   return list;
@@ -355,10 +680,24 @@ function renderConvList() {
     const isSelected = c.id === selectedId;
     const dateStr = c.sessionStart ? new Date(c.sessionStart).toLocaleString('sk-SK', { day:'2-digit', month:'2-digit', year:'numeric', hour:'2-digit', minute:'2-digit' }) : '—';
 
+    let auditPills = '';
+    if (c.audit) {
+      if (c.audit.tampered > 0) auditPills += '<span class="audit-pill tampered" title="Tampered messages">⚠️ ' + c.audit.tampered + ' tampered</span>';
+      if (c.audit.pasted > 0) auditPills += '<span class="audit-pill pasted" title="Pasted messages">📋 ' + c.audit.pasted + ' pasted</span>';
+      if (c.audit.noToken > 0) auditPills += '<span class="audit-pill no-token" title="No token">❓ ' + c.audit.noToken + '</span>';
+    }
+    if (c.wpmStats && c.wpmStats.count > 0) {
+      auditPills += '<span class="audit-pill wpm" title="Average typing pace (words per minute), pasted messages excluded">⌨️ ⌀ ' + formatWpm(c.wpmStats.mean) + ' WPM</span>';
+    }
+    if (c.wordStats) {
+      auditPills += '<span class="audit-pill words" title="Words: student / tutor">📝 ' + c.wordStats.studentTotal + ' / ' + c.wordStats.tutorTotal + ' w</span>';
+    }
+
     return '<div class="conv-card' + (isSelected ? ' selected' : '') + '" onclick="selectConversation(\'' + c.id + '\')">' +
       '<button class="conv-remove" onclick="event.stopPropagation();removeConversation(\'' + c.id + '\')" title="Remove">✕</button>' +
       '<div class="conv-name" title="' + escHtml(c.filename) + '">' + escHtml(c.filename) + '</div>' +
       '<div class="conv-meta"><span>📅 ' + dateStr + '</span><span>💬 ' + c.totalCount + ' msgs</span>' + (c.duration ? '<span>⏱ ' + c.duration + '</span>' : '') + '</div>' +
+      (auditPills ? '<div class="conv-audit">' + auditPills + '</div>' : '') +
       '</div>';
   }).join('');
 }
@@ -386,6 +725,26 @@ function clearAll() {
   updateUI();
 }
 
+function statusLabel(status) {
+  switch (status) {
+    case 'typed': return '✍️ TYPED';
+    case 'pasted': return '📋 PASTED';
+    case 'tampered': return '⚠️ TAMPERED';
+    case 'no-token': return '❓ NO TOKEN';
+    default: return status || 'unknown';
+  }
+}
+
+function statusTooltip(status) {
+  switch (status) {
+    case 'typed': return 'Message integrity verified — student typed this message.';
+    case 'pasted': return 'Integrity verified — student pasted this content into the chat.';
+    case 'tampered': return 'Token does not match content — message may have been edited after sending.';
+    case 'no-token': return 'No integrity token present on this message.';
+    default: return '';
+  }
+}
+
 function renderViewer() {
   const viewer = document.getElementById('viewer');
   if (conversations.length === 0) {
@@ -410,7 +769,55 @@ function renderViewer() {
   html += '<span>💾 Export: ' + exportStr + '</span>';
   html += '<span>💬 ' + conv.userCount + ' user / ' + conv.botCount + ' bot msgs</span>';
   if (conv.duration) html += '<span>⏱ ' + conv.duration + '</span>';
-  html += '</div></div>';
+  html += '</div>';
+
+  // Audit summary
+  if (conv.audit) {
+    const a = conv.audit;
+    html += '<div class="audit-summary">';
+    html += '<span class="audit-badge typed" title="Verified typed">✍️ ' + a.typed + ' typed</span>';
+    if (a.pasted > 0) html += '<span class="audit-badge pasted" title="Verified pasted">📋 ' + a.pasted + ' pasted</span>';
+    if (a.tampered > 0) html += '<span class="audit-badge tampered" title="Token mismatch — content edited">⚠️ ' + a.tampered + ' tampered</span>';
+    if (a.noToken > 0) html += '<span class="audit-badge no-token" title="No integrity token">❓ ' + a.noToken + ' no-token</span>';
+    html += '</div>';
+  } else {
+    html += '<div class="audit-summary"><span class="audit-badge auditing">🔍 Auditing tokens…</span></div>';
+  }
+
+  // Word count stats
+  const ws = conv.wordStats;
+  if (ws) {
+    html += '<div class="stats-row">';
+    html += '<span class="stats-row-label">📝 Word counts</span>';
+    html += '<span class="word-stat student" title="Total words written by student across all messages">student total <span class="stat-val">' + ws.studentTotal + '</span></span>';
+    html += '<span class="word-stat tutor" title="Total words written by AI tutor across all messages">tutor total <span class="stat-val">' + ws.tutorTotal + '</span></span>';
+    if (ws.student.count > 0) {
+      html += '<span class="word-stat" title="Average words per student message">student avg <span class="stat-val">' + formatNum(ws.student.mean, 1) + '</span> w/msg</span>';
+      html += '<span class="word-stat" title="Median words per student message">median <span class="stat-val">' + formatNum(ws.student.median, 1) + '</span></span>';
+      html += '<span class="word-stat" title="Sample standard deviation of words per student message">σ <span class="stat-val">' + formatNum(ws.student.std, 1) + '</span></span>';
+      html += '<span class="word-stat" title="Min – Max words per student message">range <span class="stat-val">' + ws.student.min + ' – ' + ws.student.max + '</span></span>';
+    }
+    html += '<span class="stats-note">Word counts split by whitespace.</span>';
+    html += '</div>';
+  }
+
+  // WPM stats row
+  const wp = conv.wpmStats;
+  html += '<div class="stats-row">';
+  html += '<span class="stats-row-label">⌨️ Typing pace</span>';
+  if (wp && wp.count > 0) {
+    html += '<span class="wpm-stat" title="Number of student messages used in WPM calculation (pasted messages excluded)">n = <span class="stat-val">' + wp.count + '</span></span>';
+    html += '<span class="wpm-stat" title="Mean (average) words per minute">avg <span class="stat-val">' + formatWpm(wp.mean) + '</span> WPM</span>';
+    html += '<span class="wpm-stat" title="Median words per minute">median <span class="stat-val">' + formatWpm(wp.median) + '</span> WPM</span>';
+    html += '<span class="wpm-stat" title="Sample standard deviation">σ <span class="stat-val">' + formatWpm(wp.std) + '</span> WPM</span>';
+    html += '<span class="wpm-stat" title="Min – Max range">range <span class="stat-val">' + formatWpm(wp.min) + ' – ' + formatWpm(wp.max) + '</span></span>';
+  } else {
+    html += '<span class="wpm-stat empty" title="Not enough data: need user messages with timestamps and word content">no data available</span>';
+  }
+  html += '<span class="stats-note">WPM = words ÷ minutes between previous message and send. Pasted excluded.</span>';
+  html += '</div>';
+
+  html += '</div>'; // end conv-header
 
   html += '<div class="msg-scroll" id="msgScroll">';
   for (const m of conv.messages) {
@@ -425,19 +832,45 @@ function renderViewer() {
       if (ts) html += '<div class="msg-timestamp">' + ts + '</div>';
       html += '</div>';
     } else if (m.role === 'user') {
-      html += '<div class="msg user-msg">';
-      html += '<div class="msg-role">👤 Student</div>';
+      const status = m._status || (conv.audit ? 'no-token' : null);
+      const statusClass = (status && status !== 'typed') ? ' status-' + status : '';
+      html += '<div class="msg user-msg' + statusClass + '">';
+      html += '<div class="msg-role">👤 Student';
+      if (status) {
+        html += '<span class="msg-status-badge ' + status + '" title="' + escHtml(statusTooltip(status)) + '">' + statusLabel(status) + '</span>';
+      } else {
+        html += '<span class="msg-status-badge no-token" title="Auditing…">🔍 …</span>';
+      }
+      html += '</div>';
       html += escHtml(text);
       images.forEach(url => {
         if (url) html += '<img src="' + escHtml(url) + '" style="max-width:100%;max-height:300px;border-radius:8px;margin-top:8px;cursor:pointer;display:block;" onclick="showImage(this.src)">';
       });
-      if (ts) html += '<div class="msg-timestamp">' + ts + '</div>';
+
+      // WPM badge
+      let wpmHtml = '';
+      if (m._status === 'pasted') {
+        wpmHtml = '<span class="msg-wpm pasted-info" title="Pasted content — typing pace not applicable">📋 pasted (' + (m._wordCount || 0) + ' words)</span>';
+      } else if (typeof m._wpm === 'number' && isFinite(m._wpm)) {
+        const tooltip = (m._wordCount || 0) + ' words in ' + formatElapsed(m._elapsedSec) + ' (since previous message)';
+        wpmHtml = '<span class="msg-wpm" title="' + escHtml(tooltip) + '">⌨️ ' + formatWpm(m._wpm) + ' WPM · ' + (m._wordCount || 0) + ' w</span>';
+      } else if (m._wordCount > 0) {
+        wpmHtml = '<span class="msg-wpm na" title="Cannot compute WPM (missing previous timestamp)">' + (m._wordCount || 0) + ' words</span>';
+      }
+
+      if (ts || wpmHtml) {
+        html += '<div class="msg-timestamp">';
+        if (wpmHtml) html += wpmHtml;
+        if (ts) html += '<span>' + ts + '</span>';
+        html += '</div>';
+      }
       html += '</div>';
     } else if (m.role === 'assistant') {
       html += '<div class="msg bot-msg">';
       html += '<div class="msg-role">🤖 AI Tutor</div>';
       html += renderMarkdown(text);
-      if (ts) html += '<div class="msg-timestamp">' + ts + '</div>';
+      const wordsHtml = '<span class="msg-words" title="Tutor message word count">📝 ' + (m._wordCount || 0) + ' words</span>';
+      html += '<div class="msg-timestamp">' + wordsHtml + (ts ? '<span>' + ts + '</span>' : '') + '</div>';
       html += '</div>';
     }
   }
@@ -561,9 +994,20 @@ function toggleSidebar() {
 // ==================== CSV Export ====================
 function exportCSV() {
   if (conversations.length === 0) return;
-  const rows = [['Filename', 'Session Start', 'Export Time', 'User Messages', 'Bot Messages', 'Total Messages', 'Duration']];
+  const rows = [[
+    'Filename', 'Session Start', 'Export Time', 'User Messages', 'Bot Messages', 'Total Messages', 'Duration',
+    'Typed', 'Pasted', 'Tampered', 'No-Token',
+    'WPM Avg', 'WPM Median', 'WPM Std', 'WPM Min', 'WPM Max', 'WPM Samples',
+    'Student Total Words', 'Tutor Total Words',
+    'Student Avg w/msg', 'Student Median w/msg', 'Student Std w/msg', 'Student Min w/msg', 'Student Max w/msg',
+    'Tutor Avg w/msg', 'Tutor Median w/msg', 'Tutor Std w/msg', 'Tutor Min w/msg', 'Tutor Max w/msg'
+  ]];
 
   conversations.forEach(c => {
+    const a = c.audit || { typed: '', pasted: '', tampered: '', noToken: '' };
+    const w = c.wpmStats || { count: 0, mean: null, median: null, std: null, min: null, max: null };
+    const ws = c.wordStats || { studentTotal: '', tutorTotal: '', student: { mean: null, median: null, std: null, min: null, max: null }, tutor: { mean: null, median: null, std: null, min: null, max: null } };
+    const fmt = v => (v === null || v === undefined || !isFinite(v)) ? '' : (Number.isInteger(v) ? v : v.toFixed(2));
     rows.push([
       c.filename,
       c.sessionStart || '',
@@ -571,7 +1015,12 @@ function exportCSV() {
       c.userCount,
       c.botCount,
       c.totalCount,
-      c.duration || ''
+      c.duration || '',
+      a.typed, a.pasted, a.tampered, a.noToken,
+      fmt(w.mean), fmt(w.median), fmt(w.std), fmt(w.min), fmt(w.max), w.count,
+      ws.studentTotal, ws.tutorTotal,
+      fmt(ws.student.mean), fmt(ws.student.median), fmt(ws.student.std), fmt(ws.student.min), fmt(ws.student.max),
+      fmt(ws.tutor.mean), fmt(ws.tutor.median), fmt(ws.tutor.std), fmt(ws.tutor.min), fmt(ws.tutor.max)
     ]);
   });
 
