@@ -6,7 +6,7 @@ const MODEL_NAME = "GPT-5.3-Instant"; // you may adjust this part based on your 
 const API_FIRST_PART = "sk-poe-XOcVz78f-vmTheTmhvzR-OX6Kpge42xwBtzf"; //fill only part of api and the rest use as a password  to your app
 
 
-const copyPasteProtection = true; // set true to enable random alternation of pasted text 
+const copyPasteProtection = false; // set true to enable random alternation of pasted text 
 // add first message, supported is formatting using Markdown 
 const FIRST_MESSAGE = `Welcome to the AI tutor Maya for physics. Her goal is to guide you through a discussion about the impacts of science on society. Before starting this discussion, remember to:
 
