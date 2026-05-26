@@ -10,7 +10,7 @@ const copyPasteProtection = true; // set true to enable random alternation of pa
 // add first message, supported is formatting using Markdown 
 const FIRST_MESSAGE = `Welcome to the AI tutor Maya for physics. Her goal is to guide you through a discussion about the impacts of science on society. Before starting this discussion, remember to:
 
-* Enter the key that you received from your subject (click the 🔑 icon in the bottom-rigth corner)
+* **Enter the key** that you received from your teacher (click the 🔑 icon in the bottom-rigth corner)
 * Choose **one topic** that interests you most from the options below which will be provided to you by Maya
 * After completion, **save the conversation** using 💾 (downloads a *.json* file) and submit it. 
 * Before submition, **rename the file** using your name and surname (e.g. *lincoln_abraham.json*)
