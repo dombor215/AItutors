@@ -26,7 +26,7 @@
 <link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/JupyterPER/SageMathAINotebooks@main/vendor/css/vendor/prism.css">
 <link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/JupyterPER/SageMathAINotebooks@main/vendor/css/notebook.css">
 <link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/JupyterPER/SageMathAINotebooks@main/vendor/css/nbpreview.css">
-<link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/JupyterPER/SageMathAINotebooks@main/css/nbplayer15.css">
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/JupyterPER/SageMathAINotebooks@main/css/nbplayer24.css">
 <link rel="stylesheet" href="custom.css">
 </head>
 <body>
@@ -34,15 +34,12 @@
 <div id="main">
 <div id="notebook-holder"><div class="nb-notebook"><div class="nb-worksheet"><div class="nb-cell nb-markdown-cell">
         <div class="editor-container">
-            <textarea id="md-editor-1780871672134" placeholder="Enter your Markdown or HTML here" class="markdown-textarea" data-original="# **Kvapka v mori**
+            <textarea id="md-editor-1788984041911-1" placeholder="Enter your Markdown or HTML here" class="markdown-textarea" data-original="# **Kvapka v mori**
 ## **Modelovanie vlnenia na vodnej hladine**
 
-V tomto notebooku budeme postupne modelovať vlnenie na vodnej hladine - od jednoduchej 1D vlny až po realistický 2D model s útlmom." style="display: none;"># **Kvapka v mori**
-## **Modelovanie vlnenia na vodnej hladine**
-
-V tomto notebooku budeme postupne modelovať vlnenie na vodnej hladine - od jednoduchej 1D vlny až po realistický 2D model s útlmom.</textarea>
+V tomto notebooku budeme postupne modelovať vlnenie na vodnej hladine - od jednoduchej 1D vlny až po realistický 2D model s útlmom." style="display: none;"></textarea>
         </div>
-        <div id="preview-1780871672134" class="markdown-preview" style="display: block;" data-original-markdown="# **Kvapka v mori**
+        <div id="preview-1788984041911-1" class="markdown-preview" style="display: block;" data-original-markdown="# **Kvapka v mori**
 ## **Modelovanie vlnenia na vodnej hladine**
 
 V tomto notebooku budeme postupne modelovať vlnenie na vodnej hladine - od jednoduchej 1D vlny až po realistický 2D model s útlmom."><h1 id="kvapka-v-mori"><strong>Kvapka v mori</strong></h1>
@@ -51,39 +48,27 @@ V tomto notebooku budeme postupne modelovať vlnenie na vodnej hladine - od jedn
 </div>
     </div><div class="nb-cell nb-markdown-cell">
         <div class="editor-container">
-            <textarea id="md-editor-1780871672134" placeholder="Enter your Markdown or HTML here" class="markdown-textarea" data-original="&lt;p style=&quot;text-align: center;&quot;&gt;&lt;img src=&quot;https://media.istockphoto.com/id/489734766/photo/waterdrop-falling-down-to-surface.jpg?s=170667a&amp;w=0&amp;k=20&amp;c=HqhIGJS-oHqNcP7QQy8BG6FdHOd37cnowgjpegOuugY=&quot; alt=&quot;&quot; width=&quot;407&quot; height=&quot;271&quot; /&gt;&lt;/p&gt;" style="display: none;">&lt;p style="text-align: center;"&gt;&lt;img src="https://media.istockphoto.com/id/489734766/photo/waterdrop-falling-down-to-surface.jpg?s=170667a&amp;w=0&amp;k=20&amp;c=HqhIGJS-oHqNcP7QQy8BG6FdHOd37cnowgjpegOuugY=" alt="" width="407" height="271" /&gt;&lt;/p&gt;</textarea>
+            <textarea id="md-editor-1788984041911-2" placeholder="Enter your Markdown or HTML here" class="markdown-textarea" data-original="&lt;p style=&quot;text-align: center;&quot;&gt;&lt;img src=&quot;https://media.istockphoto.com/id/489734766/photo/waterdrop-falling-down-to-surface.jpg?s=170667a&amp;amp;w=0&amp;amp;k=20&amp;amp;c=HqhIGJS-oHqNcP7QQy8BG6FdHOd37cnowgjpegOuugY=&quot; alt=&quot;&quot; width=&quot;407&quot; height=&quot;271&quot; /&gt;&lt;/p&gt;" style="display: none;"></textarea>
         </div>
-        <div id="preview-1780871672134" class="markdown-preview" style="display: block;" data-original-markdown="&lt;p style=&quot;text-align: center;&quot;&gt;&lt;img src=&quot;https://media.istockphoto.com/id/489734766/photo/waterdrop-falling-down-to-surface.jpg?s=170667a&amp;w=0&amp;k=20&amp;c=HqhIGJS-oHqNcP7QQy8BG6FdHOd37cnowgjpegOuugY=&quot; alt=&quot;&quot; width=&quot;407&quot; height=&quot;271&quot; /&gt;&lt;/p&gt;"><p style="text-align: center;"><img src="https://media.istockphoto.com/id/489734766/photo/waterdrop-falling-down-to-surface.jpg?s=170667a&amp;w=0&amp;k=20&amp;c=HqhIGJS-oHqNcP7QQy8BG6FdHOd37cnowgjpegOuugY=" alt="" width="407" height="271"></p></div>
+        <div id="preview-1788984041911-2" class="markdown-preview" style="display: block;" data-original-markdown="&lt;p style=&quot;text-align: center;&quot;&gt;&lt;img src=&quot;https://media.istockphoto.com/id/489734766/photo/waterdrop-falling-down-to-surface.jpg?s=170667a&amp;amp;w=0&amp;amp;k=20&amp;amp;c=HqhIGJS-oHqNcP7QQy8BG6FdHOd37cnowgjpegOuugY=&quot; alt=&quot;&quot; width=&quot;407&quot; height=&quot;271&quot; /&gt;&lt;/p&gt;"><p style="text-align: center;"><img src="https://media.istockphoto.com/id/489734766/photo/waterdrop-falling-down-to-surface.jpg?s=170667a&amp;w=0&amp;k=20&amp;c=HqhIGJS-oHqNcP7QQy8BG6FdHOd37cnowgjpegOuugY=" alt="" width="407" height="271"></p></div>
     </div><div class="nb-cell nb-markdown-cell">
         <div class="editor-container">
-            <textarea id="md-editor-1780871672134" placeholder="Enter your Markdown or HTML here" class="markdown-textarea" data-original="Na konci sa ti (hádam) podarí niečo také (**spusti bunku** nižšie)." style="display: none;">Na konci sa ti (hádam) podarí niečo také (**spusti bunku** nižšie).</textarea>
+            <textarea id="md-editor-1788984041911-3" placeholder="Enter your Markdown or HTML here" class="markdown-textarea" data-original="Na konci sa ti (hádam) podarí niečo také (**spusti bunku** nižšie)." style="display: none;"></textarea>
         </div>
-        <div id="preview-1780871672134" class="markdown-preview" style="display: block;" data-original-markdown="Na konci sa ti (hádam) podarí niečo také (**spusti bunku** nižšie)."><p>Na konci sa ti (hádam) podarí niečo také (<strong>spusti bunku</strong> nižšie).</p>
+        <div id="preview-1788984041911-3" class="markdown-preview" style="display: block;" data-original-markdown="Na konci sa ti (hádam) podarí niečo také (**spusti bunku** nižšie)."><p>Na konci sa ti (hádam) podarí niečo také (<strong>spusti bunku</strong> nižšie).</p>
 </div>
-    </div><div class="nb-cell nb-code-cell"><div class="compute sagecell output_f21082af226b4132823f2e409a485c74" style="display: none;">
-
-
-<div class="sagecell_output_elements" style="display: none;">
-    
-    
-</div></div>
-  <div class="compute" style="display: none;">
-    <script type="text/x-sage"># BEZ TLMENIA
+    </div><div class="nb-cell nb-code-cell"><div class="compute" style="display: none;"><script type="text/x-sage"># BEZ TLMENIA
 import base64; exec('from IPython.core.interactiveshell import InteractiveShell; from sage.repl.preparse import preparse; InteractiveShell.instance().run_cell(preparse(base64.b64decode("IyBEZWZpbmUgMkQgY2lyY3VsYXIgd2F2ZSBmdW5jdGlvbiB1c2luZyBkaXN0YW5jZSByID0gc3FydCh4XjIgKyB5XjIpCnIoeCwgeSkgPSBzcXJ0KHheMiArIHleMikKCnlfMmQoeCwgeSwgdCwgQSwgbGFtYmRhXywgVCkgPSBBICogc2luKDIqcGkqKHIoeCx5KS9sYW1iZGFfIC0gdC9UKSkKCiMgU2V0IHNwZWNpZmljIHBhcmFtZXRlcnMgZm9yIHZpc3VhbGl6YXRpb24KQV92YWwgPSAxLjAKbGFtYmRhX3ZhbCA9IDQuMApUX3ZhbCA9IDIuMAp0X2ZpeGVkID0gMC41CnhfeV9taW4gPSAtMTAKeF95X21heCA9IDEwCgojIENyZWF0ZSAzRCBzdXJmYWNlIHBsb3Qgb2YgdGhlIHdhdmUgYXQgZml4ZWQgdGltZQp3YXZlXzNkID0gcGxvdDNkKHlfMmQoeCwgeSwgdF9maXhlZCwgQV92YWwsIGxhbWJkYV92YWwsIFRfdmFsKSwgCiAgICAgICAgICAgICAgICAgKHgsIHhfeV9taW4sIHhfeV9tYXgpLCAoeSwgeF95X21pbiwgeF95X21heCksCiAgICAgICAgICAgICAgICAgY29sb3I9J2xpZ2h0Ymx1ZScsCiAgICAgICAgICAgICAgICAgYWxmYT0wLjEsCiAgICAgICAgICAgICAgICAgbWVzaD1UcnVlKQoKeF9zdHJpcD0yCgojIENyZWF0ZSBhIG5hcnJvdyBzdHJpcCBhcm91bmQgdGhlIGxpbmUgeCA9IDIgZm9yIGNyb3NzLXNlY3Rpb24gdmlldwpzdHJpcF9wbG90ID0gcGxvdDNkKHlfMmQoeCwgeSwgdF9maXhlZCwgQV92YWwsIGxhbWJkYV92YWwsIFRfdmFsKSswLjAxLAogICAgICAgICAgICAgICAgICAgICh4LCB4X3N0cmlwLTAuMSwgeF9zdHJpcCswLjEpLCAoeSwgeF95X21pbiwgeF95X21heCksCiAgICAgICAgICAgICAgICAgICAgY29sb3I9J3JlZCcpCgojIFNob3cgdGhlIG5hcnJvdyBzdHJpcCB2aXN1YWxpemF0aW9uCnN0cmlwX3Bsb3QgKyB3YXZlXzNk").decode())); None')
 # UTLM
 import base64; exec('from IPython.core.interactiveshell import InteractiveShell; from sage.repl.preparse import preparse; InteractiveShell.instance().run_cell(preparse(base64.b64decode("IyBBZGQgZGFtcGluZyBmYWN0b3IgQS9zcXJ0KHIpIHRvIGNyZWF0ZSByZWFsaXN0aWMgY2lyY3VsYXIgd2F2ZSB3aXRoIGFtcGxpdHVkZSBkZWNheQp5XzJkX2RhbXBlZCh4LCB5LCB0LCBBLCBsYW1iZGFfLCBUKSA9IEEvcih4LHkpICogc2luKDIqcGkqKHIoeCx5KS9sYW1iZGFfIC0gdC9UKSkKCiMgQ3JlYXRlIDNEIHBsb3Qgb2YgZGFtcGVkIHdhdmUgYXQgZml4ZWQgdGltZSBmb3IgY29tcGFyaXNvbgp3YXZlXzNkX2RhbXBlZCA9IHBsb3QzZCh5XzJkX2RhbXBlZCh4LCB5LCA1LCBBX3ZhbCwgbGFtYmRhX3ZhbCwgVF92YWwpLCAKICAgICAgICAgICAgICAgICAgICAgICAgKHgsIC0xMCwgMTApLCAoeSwgLTEwLCAxMCksCiAgICAgICAgICAgICAgICAgICAgICAgIGNvbG9yPSJvcmFuZ2UiLAogICAgICAgICAgICAgICAgICAgICAgICBhbGZhPTAuNiwgbWVzaD1UcnVlKQoKd2F2ZV8zZF9kYW1wZWQ=").decode())); None')
-</script>
-  </div></div><div class="nb-cell nb-markdown-cell">
+</script></div></div><div class="nb-cell nb-markdown-cell">
         <div class="editor-container">
-            <textarea id="md-editor-1780871672135" placeholder="Enter your Markdown or HTML here" class="markdown-textarea" data-original="## **1. Postupná vlna v 1D**
+            <textarea id="md-editor-1788984041912-4" placeholder="Enter your Markdown or HTML here" class="markdown-textarea" data-original="## **1. Postupná vlna v 1D**
 
 - Zapíš rovnicu postupnej vlny `y_1d(x, t, A, lambda, T)` podľa vzťahu z diskusie s AI tútorom $y(x,t) = ...$.
-- Vytvor graf vlny (pomocou AI agenta)" style="display: none;">## **1. Postupná vlna v 1D**
-
-- Zapíš rovnicu postupnej vlny `y_1d(x, t, A, lambda, T)` podľa vzťahu z diskusie s AI tútorom $y(x,t) = ...$.
-- Vytvor graf vlny (pomocou AI agenta)</textarea>
+- Vytvor graf vlny (pomocou AI agenta)" style="display: none;"></textarea>
         </div>
-        <div id="preview-1780871672135" class="markdown-preview" style="display: block;" data-original-markdown="## **1. Postupná vlna v 1D**
+        <div id="preview-1788984041912-4" class="markdown-preview" style="display: block;" data-original-markdown="## **1. Postupná vlna v 1D**
 
 - Zapíš rovnicu postupnej vlny `y_1d(x, t, A, lambda, T)` podľa vzťahu z diskusie s AI tútorom $y(x,t) = ...$.
 - Vytvor graf vlny (pomocou AI agenta)"><h2 id="1-postupná-vlna-v-1d"><strong>1. Postupná vlna v 1D</strong></h2>
@@ -92,31 +77,17 @@ import base64; exec('from IPython.core.interactiveshell import InteractiveShell;
 <li>Vytvor graf vlny (pomocou AI agenta)</li>
 </ul>
 </div>
-    </div><div class="nb-cell nb-code-cell"><div class="compute sagecell output_b7f071f5ac1749498f567cbdee92d70d" style="display: none;">
-
-
-<div class="sagecell_output_elements" style="display: none;">
-    
-    
-</div></div>
-  <div class="compute" style="display: none;">
-    <script type="text/x-sage">
-</script>
-  </div></div><div class="nb-cell nb-markdown-cell">
+    </div><div class="nb-cell nb-code-cell"><div class="compute" style="display: none;"><script type="text/x-sage">
+</script></div></div><div class="nb-cell nb-markdown-cell">
         <div class="editor-container">
-            <textarea id="md-editor-1780871672136" placeholder="Enter your Markdown or HTML here" class="markdown-textarea" data-original="## **2. Kruhové vlnenie v 2D (bez útlmu)**
+            <textarea id="md-editor-1788984041913-5" placeholder="Enter your Markdown or HTML here" class="markdown-textarea" data-original="## 2. Kruhové vlnenie v 2D (bez útlmu)
 
 
 - Zapíš funkciu `y_2d(x, y, t, A, lambd, T)` s použitím vzdialenosti $r = \sqrt{x^2 + y^2}$
 - Vizualizuj vlnenie pomocou 3D grafu v istom čase s konkrétnymi parametrami (`plot_3d`, pomocou agenta)
-- Vyzvy agenta pre dodanie &quot;úzkeho pásika&quot; v okolí priamky $x=2$" style="display: none;">## **2. Kruhové vlnenie v 2D (bez útlmu)**
-
-
-- Zapíš funkciu `y_2d(x, y, t, A, lambd, T)` s použitím vzdialenosti $r = \sqrt{x^2 + y^2}$
-- Vizualizuj vlnenie pomocou 3D grafu v istom čase s konkrétnymi parametrami (`plot_3d`, pomocou agenta)
-- Vyzvy agenta pre dodanie "úzkeho pásika" v okolí priamky $x=2$</textarea>
+- Vyzvy agenta pre dodanie &quot;úzkeho pásika&quot; v okolí priamky $x=2$" style="display: none;"></textarea>
         </div>
-        <div id="preview-1780871672136" class="markdown-preview" style="display: block;" data-original-markdown="## **2. Kruhové vlnenie v 2D (bez útlmu)**
+        <div id="preview-1788984041913-5" class="markdown-preview" style="display: block;" data-original-markdown="## 2. Kruhové vlnenie v 2D (bez útlmu)
 
 
 - Zapíš funkciu `y_2d(x, y, t, A, lambd, T)` s použitím vzdialenosti $r = \sqrt{x^2 + y^2}$
@@ -128,31 +99,17 @@ import base64; exec('from IPython.core.interactiveshell import InteractiveShell;
 <li>Vyzvy agenta pre dodanie "úzkeho pásika" v okolí priamky $x=2$</li>
 </ul>
 </div>
-    </div><div class="nb-cell nb-code-cell"><div class="compute sagecell output_a4b07064119a4d73ae8454d6ac2a6ccc" style="display: none;">
-
-
-<div class="sagecell_output_elements" style="display: none;">
-    
-    
-</div></div>
-  <div class="compute" style="display: none;">
-    <script type="text/x-sage">
-</script>
-  </div></div><div class="nb-cell nb-markdown-cell">
+    </div><div class="nb-cell nb-code-cell"><div class="compute" style="display: none;"><script type="text/x-sage">
+</script></div></div><div class="nb-cell nb-markdown-cell">
         <div class="editor-container">
-            <textarea id="md-editor-1780871672136" placeholder="Enter your Markdown or HTML here" class="markdown-textarea" data-original="## **3. Realistický model s útlmom**
+            <textarea id="md-editor-1788984041914-6" placeholder="Enter your Markdown or HTML here" class="markdown-textarea" data-original="## 3. Realistický model s útlmom
 
 **Úlohy:**
 
 - Uprav predchádzajúcu funkciu tak, aby zahŕňala útlm amplitúdy $\dfrac{A}{\sqrt{r}}$ (resp. presnejšie $\dfrac{A ~e^{-\alpha x}}{\sqrt{r}}$, kde $\alpha&gt;0$)
-- Porovnaj vizualizáciu s modelom bez útlmu" style="display: none;">## **3. Realistický model s útlmom**
-
-**Úlohy:**
-
-- Uprav predchádzajúcu funkciu tak, aby zahŕňala útlm amplitúdy $\dfrac{A}{\sqrt{r}}$ (resp. presnejšie $\dfrac{A ~e^{-\alpha x}}{\sqrt{r}}$, kde $\alpha&gt;0$)
-- Porovnaj vizualizáciu s modelom bez útlmu</textarea>
+- Porovnaj vizualizáciu s modelom bez útlmu" style="display: none;"></textarea>
         </div>
-        <div id="preview-1780871672136" class="markdown-preview" style="display: block;" data-original-markdown="## **3. Realistický model s útlmom**
+        <div id="preview-1788984041914-6" class="markdown-preview" style="display: block;" data-original-markdown="## 3. Realistický model s útlmom
 
 **Úlohy:**
 
@@ -164,17 +121,8 @@ import base64; exec('from IPython.core.interactiveshell import InteractiveShell;
 <li>Porovnaj vizualizáciu s modelom bez útlmu</li>
 </ul>
 </div>
-    </div><div class="nb-cell nb-code-cell"><div class="compute sagecell output_8fb141ab9327470e8253811c4cf7f365" style="display: none;">
-
-
-<div class="sagecell_output_elements" style="display: none;">
-    
-    
-</div></div>
-  <div class="compute" style="display: none;">
-    <script type="text/x-sage">
-</script>
-  </div></div></div></div></div>
+    </div><div class="nb-cell nb-code-cell"><div class="compute" style="display: none;"><script type="text/x-sage">
+</script></div></div></div></div></div>
             
         </div>
 <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.0.0-beta1/dist/js/bootstrap.bundle.min.js" integrity="sha384-ygbV9kiqUc6oa4msXn9868pTtWMgiQaeYH7/t7LECLbyPA2x65Kgf80OJFdroafW" crossorigin="anonymous"></script>
@@ -195,25 +143,32 @@ import base64; exec('from IPython.core.interactiveshell import InteractiveShell;
 <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.16/addon/fold/foldgutter.min.css">
 <script>let RUN_DELAY = 1000;</script>
 <script src="https://cdn.jsdelivr.net/gh/JupyterPER/SageMathAINotebooks@main/js/customthemes15.js"></script>
-<script src="https://cdn.jsdelivr.net/gh/JupyterPER/SageMathAINotebooks@main/js/nbrunner17.js"></script>
-<script src="https://cdn.jsdelivr.net/gh/JupyterPER/SageMathAINotebooks@main/js/nbaiengine17.js"></script>
-<script src="https://cdn.jsdelivr.net/gh/JupyterPER/SageMathAINotebooks@main/js/nbaipriming13.js"></script>
-<script src="https://cdn.jsdelivr.net/gh/JupyterPER/SageMathAINotebooks@main/js/nbautocompletion15.js"></script>
+<script src="https://cdn.jsdelivr.net/gh/JupyterPER/SageMathAINotebooks@main/js/nbrunner24.js"></script>
+<script src="https://cdn.jsdelivr.net/gh/JupyterPER/SageMathAINotebooks@main/js/nbaiengine23.js"></script>
+<script src="https://cdn.jsdelivr.net/gh/JupyterPER/SageMathAINotebooks@main/js/nbaipriming22.js"></script>
+<script src="https://cdn.jsdelivr.net/gh/JupyterPER/SageMathAINotebooks@main/js/nbautocompletion20.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
 <script src="https://code.datagridxl.com/datagridxl2.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/fflate@0.8.3/umd/index.min.js"></script>
 <script>
   playerConfig={"panes":"Exec","lang":"sage","linked":true,"eval":false,"hide":["fullScreen"],"execute":true,"showRead":false,"collapsable":false,"playerPath":"https://cdn.jsdelivr.net/gh/JupyterPER/SageMathAINotebooks@main","name":"SageMath"};
   playerMode={"showSage":true,"showNotebookInput":true,"showSageInput":true};
-  let API_KEY="sk-poe-rMP2IBelVM70WI5R6keIxndBKtTQ6f1Fxesf-V20Dd4";
-  let API_URL="https://api.poe.com/v1/chat/completions";
-  let CURRENT_MODEL="kimi-k2.5";
+  let API_KEY="odf*ufv*sage";
+  let API_URL="https://ai-wrapper.dominik-borovsky123.workers.dev/v1/chat/completions";
+  let CURRENT_MODEL="sageai-fast";
   let CURRENT_LANGUAGE="Slovak";
   let SAGECELL_URL="https://sage-sk.org/";
   let toggleEvalBtnsState=false;
   let isFullWidthState=false;
+  window.hideCodeInputState=false;
   let PRELOAD="";
   let SETTINGS_PATH_NAME="settings.js";
+  let aiEduMode=true;
+  let aiCompleteMode=true;
+  let aiLogs=false;
+  window.aiLogs=false;
+  window.aiSettingsVisible=true;
+  window.aiLogsHistory=[];
   makeMenu();
   localize();
   createTableOfContents();
@@ -231,6 +186,7 @@ import base64; exec('from IPython.core.interactiveshell import InteractiveShell;
   if (CUSTOM_CSS) applyCustomCSS(CUSTOM_CSS);
   addCommentShortcutToAllSageCells();
   applyPreloadCells();
+  setupBulkCellObserver();
 </script>
 <script src="settings.js"></script>
 </body>
