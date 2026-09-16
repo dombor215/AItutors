@@ -226,6 +226,35 @@
     white-space: pre;
   }
 
+  /* ========= Markdown tables ========= */
+  .table-wrap {
+    width: 100%;
+    overflow-x: auto;
+    margin: 0.8rem 0;
+  }
+
+  .table-wrap table {
+    width: 100%;
+    border-collapse: collapse;
+    font-size: 0.95em;
+  }
+
+  .table-wrap th,
+  .table-wrap td {
+    padding: 0.55rem 0.7rem;
+    border: 1px solid rgba(128, 128, 128, 0.35);
+    vertical-align: top;
+  }
+
+  .table-wrap th {
+    font-weight: 700;
+    background: rgba(128, 128, 128, 0.12);
+  }
+
+  .table-wrap tr:nth-child(even) td {
+    background: rgba(128, 128, 128, 0.05);
+  }
+
   /* ========= Timestamp ========= */
   .message-timestamp {
     font-size: 11px;
@@ -1462,8 +1491,114 @@ function renderMarkdown(text) {
   var listType = null;
   var listItems = [];
 
+  function splitTableRow(line) {
+    line = line.trim();
+
+    // Outer pipes are optional in Markdown tables.
+    if (line.startsWith('|')) line = line.slice(1);
+    if (line.endsWith('|')) line = line.slice(0, -1);
+
+    return line
+      .split(/(?<!\\)\|/)
+      .map(function(cell) {
+        return cell.trim().replace(/\\\|/g, '|');
+      });
+  }
+
+  function isTableDivider(line) {
+    var cells = splitTableRow(line);
+
+    return cells.length > 0 && cells.every(function(cell) {
+      // Valid examples: - , :- , -: , :-: , --- , :--- , ---: , :---:
+      return /^:?-+:?$/.test(cell.trim());
+    });
+  }
+
+  function getTableAlignment(dividerCell) {
+    var cell = dividerCell.trim();
+    var left = cell.startsWith(':');
+    var right = cell.endsWith(':');
+
+    if (left && right) return 'center';
+    if (right) return 'right';
+    if (left) return 'left';
+    return '';
+  }
+
   for (var i = 0; i < lines.length; i++) {
     var line = lines[i];
+
+    // Markdown table:
+    // | Header | Header |
+    // | ------ | :----: |
+    // | Value  | Value  |
+    if (
+      i + 1 < lines.length &&
+      line.includes('|') &&
+      isTableDivider(lines[i + 1])
+    ) {
+      // Close an open list before inserting a table.
+      if (inList) {
+        processed.push(
+          '<' + listType + '>' +
+          listItems.map(function(item) {
+            return '<li>' + item + '</li>';
+          }).join('') +
+          '</' + listType + '>'
+        );
+
+        inList = false;
+        listType = null;
+        listItems = [];
+      }
+
+      var headers = splitTableRow(line);
+      var divider = splitTableRow(lines[i + 1]);
+
+      // Avoid treating mismatched pipe text as a table.
+      if (headers.length === divider.length) {
+        var alignments = divider.map(getTableAlignment);
+
+        var tableHtml = '<div class="table-wrap"><table>';
+
+        tableHtml += '<thead><tr>';
+        headers.forEach(function(header, index) {
+          var align = alignments[index];
+          var style = align ? ' style="text-align:' + align + '"' : '';
+          tableHtml += '<th' + style + '>' + header + '</th>';
+        });
+        tableHtml += '</tr></thead><tbody>';
+
+        i += 2;
+
+        while (i < lines.length && lines[i].includes('|') && lines[i].trim() !== '') {
+          var cells = splitTableRow(lines[i]);
+
+          // Stop if this no longer has the expected number of cells.
+          if (cells.length !== headers.length) {
+            i--;
+            break;
+          }
+
+          tableHtml += '<tr>';
+
+          cells.forEach(function(cell, index) {
+            var align = alignments[index];
+            var style = align ? ' style="text-align:' + align + '"' : '';
+            tableHtml += '<td' + style + '>' + cell + '</td>';
+          });
+
+          tableHtml += '</tr>';
+          i++;
+        }
+
+        i--; // compensate for the outer loop increment
+        tableHtml += '</tbody></table></div>';
+        processed.push(tableHtml);
+        continue;
+      }
+    }
+
     var ulMatch = line.match(/^[\s]*[\*\-]\s+(.+)$/);
     var olMatch = line.match(/^[\s]*\d+\.\s+(.+)$/);
 
@@ -1476,23 +1611,44 @@ function renderMarkdown(text) {
         listType = currentType;
         listItems = [];
       } else if (listType !== currentType) {
-        processed.push('<' + listType + '>' + listItems.map(function(item) { return '<li>' + item + '</li>'; }).join('') + '</' + listType + '>');
+        processed.push(
+          '<' + listType + '>' +
+          listItems.map(function(item) {
+            return '<li>' + item + '</li>';
+          }).join('') +
+          '</' + listType + '>'
+        );
         listItems = [];
         listType = currentType;
       }
+
       listItems.push(content);
     } else {
       if (inList) {
-        processed.push('<' + listType + '>' + listItems.map(function(item) { return '<li>' + item + '</li>'; }).join('') + '</' + listType + '>');
+        processed.push(
+          '<' + listType + '>' +
+          listItems.map(function(item) {
+            return '<li>' + item + '</li>';
+          }).join('') +
+          '</' + listType + '>'
+        );
         inList = false;
         listType = null;
         listItems = [];
       }
+
       processed.push(line);
     }
   }
+
   if (inList) {
-    processed.push('<' + listType + '>' + listItems.map(function(item) { return '<li>' + item + '</li>'; }).join('') + '</' + listType + '>');
+    processed.push(
+      '<' + listType + '>' +
+      listItems.map(function(item) {
+        return '<li>' + item + '</li>';
+      }).join('') +
+      '</' + listType + '>'
+    );
   }
 
   html = processed.join('\n');
@@ -1518,7 +1674,7 @@ function renderMarkdown(text) {
     var trimmed = fLine.trim();
     if (trimmed === '') {
       withParagraphs.push('');
-    } else if (trimmed.match(/^<(h[1-6]|ul|ol|pre|blockquote|hr)/)) {
+    } else if (trimmed.match(/^<(h[1-6]|ul|ol|pre|blockquote|hr|table|div)/)) {
       withParagraphs.push(fLine);
     } else if (!trimmed.match(/^<\/(ul|ol|li|blockquote)>$/)) {
       withParagraphs.push('<p>' + fLine + '</p>');
