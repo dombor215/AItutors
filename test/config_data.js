@@ -4,7 +4,7 @@
 
 const tabTitle = "AI Tutor";
 const headerTitle = "Impacts of Science: Mechanics and Society";
-const copyrightText = "© 2026 v1.3, powered by OpenAI GPT-5.3";
+const copyrightText = "© 2026 Dominik Borovský & Jozef Hanč v2.0, powered by OpenAI GPT-5.3";
 
 
 // ============================================================
@@ -12,9 +12,9 @@ const copyrightText = "© 2026 v1.3, powered by OpenAI GPT-5.3";
 // ============================================================
 
 // AI provider or your existing Cloudflare Worker endpoint.
-const API_URL = "https://api.poe.com/v1/chat/completions";
+const API_URL = "https://ai-wrapper.dominik-borovsky123.workers.dev/v1/chat/completions";
 
-const MODEL_NAME = "GPT-5.3-Instant";
+const MODEL_NAME = "sageai-fast";
 
 // Without PocketBase:
 // This value is combined with the key entered by the pupil.
@@ -25,7 +25,7 @@ const MODEL_NAME = "GPT-5.3-Instant";
 //
 // Any value in this file is visible to someone inspecting the page.
 // Do not put PocketBase administrator credentials here.
-const API_FIRST_PART = "";
+const API_FIRST_PART = "odf*ufv*sage";
 
 
 // ============================================================

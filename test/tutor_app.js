@@ -43,6 +43,10 @@
   let loginDialog;
   let loginForm;
   let importInput;
+  let passwordResetDialog;
+  let passwordResetForm;
+  let passwordConfirmDialog;
+  let passwordConfirmForm;
 
   const nowISO = () => new Date().toISOString();
 
@@ -760,6 +764,142 @@
   });
 
   // ==========================================================
+  // Password reset
+  // ==========================================================
+
+  function getPasswordResetToken() {
+    return new URL(window.location.href)
+      .searchParams
+      .get("resetToken");
+  }
+
+  function removePasswordResetToken() {
+    const url = new URL(window.location.href);
+    url.searchParams.delete("resetToken");
+
+    history.replaceState(
+      null,
+      "",
+      url.pathname + url.search + url.hash
+    );
+  }
+
+  async function submitPasswordResetRequest(event) {
+    event.preventDefault();
+
+    await run(async () => {
+      if (!DATABASE_MODE) {
+        throw new Error(
+          "Password reset is unavailable in standalone mode."
+        );
+      }
+
+      const email =
+        passwordResetForm.elements.email.value.trim();
+
+      if (!email) {
+        throw new Error("Enter your email address.");
+      }
+
+      await fetchJSON(
+        PB_URL + USERS_PATH + "/request-password-reset",
+        {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json"
+          },
+          body: JSON.stringify({ email })
+        }
+      );
+
+      passwordResetForm.reset();
+      passwordResetDialog.close();
+
+      // Keep this deliberately generic to avoid revealing whether
+      // an email address has an account.
+      showToast(
+        "If an account exists for that email address, " +
+        "a password reset link has been sent.",
+        7000
+      );
+
+      setStatus(
+        "Check your email for a password reset link."
+      );
+
+      if (!auth && !loginDialog.open) {
+        loginDialog.showModal();
+      }
+    });
+  }
+
+  async function submitPasswordResetConfirmation(event) {
+    event.preventDefault();
+
+    await run(async () => {
+      const token = getPasswordResetToken();
+      const password =
+        passwordConfirmForm.elements.password.value;
+      const passwordConfirm =
+        passwordConfirmForm.elements.passwordConfirm.value;
+
+      if (!token) {
+        throw new Error(
+          "The password reset token is missing. " +
+          "Open the complete link from the reset email."
+        );
+      }
+
+      if (!password || !passwordConfirm) {
+        throw new Error(
+          "Enter and confirm your new password."
+        );
+      }
+
+      if (password !== passwordConfirm) {
+        throw new Error("The passwords do not match.");
+      }
+
+      await fetchJSON(
+        PB_URL + USERS_PATH + "/confirm-password-reset",
+        {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json"
+          },
+          body: JSON.stringify({
+            token,
+            password,
+            passwordConfirm
+          })
+        }
+      );
+
+      // PocketBase invalidates existing tokens after a successful reset.
+      auth = null;
+
+      passwordConfirmForm.reset();
+      passwordConfirmDialog.close();
+      removePasswordResetToken();
+
+      setStatus(
+        "✓ Password changed. Log in with your new password."
+      );
+
+      showToast(
+        "✓ Your password has been changed.",
+        6000
+      );
+
+      updateUI();
+
+      if (!loginDialog.open) {
+        loginDialog.showModal();
+      }
+    });
+  }
+
+  // ==========================================================
   // Login/logout
   // ==========================================================
 
@@ -914,6 +1054,200 @@
     ];
   }
 
+  async function fetchAIReply(key, onText) {
+    const controller = new AbortController();
+    const timer = setTimeout(() => controller.abort(), 120000);
+
+    let reader;
+
+    try {
+      const response = await fetch(API_URL, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${key}`
+        },
+        body: JSON.stringify({
+          model: MODEL_NAME,
+          messages: collectApiMessages(),
+          stream: true
+        }),
+        signal: controller.signal
+      });
+
+      if (!response.ok) {
+        const raw = await response.text();
+        let detail = response.statusText || "Request failed";
+
+        try {
+          const data = JSON.parse(raw);
+          detail = data.error?.message || data.message || detail;
+        } catch {
+          // Do not display arbitrary server HTML.
+        }
+
+        throw new Error(`HTTP ${response.status}: ${detail}`);
+      }
+
+      const contentType =
+        response.headers.get("content-type") || "";
+
+      // Compatibility fallback: some endpoints return ordinary JSON
+      // even when streaming was requested.
+      if (contentType.includes("application/json")) {
+        const data = await response.json();
+
+        if (data.error) {
+          throw new Error(
+            data.error.message || "The AI request failed."
+          );
+        }
+
+        const reply = data.choices?.[0]?.message?.content;
+
+        if (typeof reply !== "string" || !reply.trim()) {
+          throw new Error("The AI returned no text response.");
+        }
+
+        onText(reply);
+        return reply;
+      }
+
+      if (!contentType.includes("text/event-stream")) {
+        throw new Error(
+          "The AI endpoint did not return a supported streaming response."
+        );
+      }
+
+      if (!response.body) {
+        throw new Error("The AI response has no readable body.");
+      }
+
+      reader = response.body.getReader();
+
+      const decoder = new TextDecoder();
+      let buffer = "";
+      let dataLines = [];
+      let reply = "";
+      let completed = false;
+
+      function processEvent() {
+        if (!dataLines.length) return;
+
+        const payload = dataLines.join("\n");
+        dataLines = [];
+
+        if (payload.trim() === "[DONE]") {
+          completed = true;
+          return;
+        }
+
+        let event;
+
+        try {
+          event = JSON.parse(payload);
+        } catch {
+          throw new Error("The AI returned an invalid stream event.");
+        }
+
+        if (event.error) {
+          throw new Error(
+            event.error.message || "The AI stream failed."
+          );
+        }
+
+        const choice = event.choices?.find(
+          item => item.index === 0
+        );
+
+        const delta = choice?.delta?.content;
+
+        if (typeof delta === "string" && delta) {
+          reply += delta;
+          onText(reply);
+        }
+      }
+
+      function processLines() {
+        let newline;
+
+        while (
+          !completed &&
+          (newline = buffer.indexOf("\n")) !== -1
+        ) {
+          let line = buffer.slice(0, newline);
+          buffer = buffer.slice(newline + 1);
+
+          // Support both LF and CRLF line endings.
+          if (line.endsWith("\r")) {
+            line = line.slice(0, -1);
+          }
+
+          if (line === "") {
+            processEvent();
+          } else if (line.startsWith("data:")) {
+            let value = line.slice(5);
+
+            if (value.startsWith(" ")) {
+              value = value.slice(1);
+            }
+
+            dataLines.push(value);
+          }
+
+          // Ignore SSE comments and other fields.
+        }
+      }
+
+      while (!completed) {
+        const { value, done } = await reader.read();
+
+        if (done) {
+          buffer += decoder.decode();
+          buffer += "\n\n";
+          processLines();
+          break;
+        }
+
+        buffer += decoder.decode(value, { stream: true });
+        processLines();
+      }
+
+      // Do not silently save a connection-truncated reply as complete.
+      if (!completed) {
+        throw new Error(
+          "The AI stream ended before completion. Please retry."
+        );
+      }
+
+      if (!reply.trim()) {
+        throw new Error("The AI returned no text response.");
+      }
+
+      return reply;
+    } catch (error) {
+      if (error.name === "AbortError") {
+        throw new Error(
+          "The AI request timed out. Please try again."
+        );
+      }
+
+      throw error;
+    } finally {
+      clearTimeout(timer);
+
+      if (reader) {
+        try {
+          await reader.cancel();
+        } catch {
+          // The connection may already be closed.
+        }
+
+        reader.releaseLock();
+      }
+    }
+  }
+
   window.sendMessage = async function() {
     if (!usable()) return;
 
@@ -979,29 +1313,47 @@
       currentTypingEl = addProcessingMessage();
       setStatus("Waiting for the AI…");
 
+      let previewTextEl = null;
+
       try {
-        const response = await fetchJSON(
-          API_URL,
-          {
-            method: "POST",
-            headers: {
-              "Content-Type": "application/json",
-              Authorization: `Bearer ${key}`
-            },
-            body: JSON.stringify({
-              model: MODEL_NAME,
-              messages: collectApiMessages()
-            })
-          },
-          120000
-        );
+        const reply = await fetchAIReply(key, partialText => {
+          const nearBottom =
+            chatBox.scrollHeight -
+            chatBox.scrollTop -
+            chatBox.clientHeight < 100;
 
-        const reply = response.choices?.[0]?.message?.content;
+          if (!previewTextEl) {
+            // Replace the waiting indicator with a temporary
+            // assistant message when the first text arrives.
+            currentTypingEl?.remove();
 
-        if (typeof reply !== "string" || !reply.trim()) {
-          throw new Error("The AI returned no text response.");
-        }
+            currentTypingEl = addMessage(
+              "",
+              "bot",
+              [],
+              nowISO()
+            );
 
+            previewTextEl = document.createElement("div");
+            previewTextEl.style.whiteSpace = "pre-wrap";
+            previewTextEl.style.overflowWrap = "anywhere";
+
+            currentTypingEl.appendChild(previewTextEl);
+
+            setStatus("AI is replying…");
+          }
+
+          // Display partial output as plain text.
+          // The existing renderer formats the completed answer.
+          previewTextEl.textContent = partialText;
+
+          if (nearBottom) {
+            chatBox.scrollTop = chatBox.scrollHeight;
+          }
+        });
+
+        // Only add the assistant message to saved history after
+        // the stream completes successfully.
         messages.push({
           id: makeId(),
           role: "assistant",
@@ -1012,7 +1364,6 @@
         awaitingReply = false;
         markDirty();
 
-        // Save the complete response, not a partial typing animation.
         await saveCurrent();
       } finally {
         currentTypingEl?.remove();
@@ -1020,6 +1371,11 @@
         renderConversation();
       }
     });
+
+    // run() has finished and updated the UI.
+    if (ready && !input.disabled) {
+      input.focus({ preventScroll: true });
+    }
   };
 
   // ==========================================================
@@ -1232,6 +1588,22 @@
 
     loginForm.querySelector('button[type="submit"]').disabled = busy;
 
+    if (passwordResetForm) {
+      passwordResetForm
+        .querySelectorAll("button, input")
+        .forEach(element => {
+          element.disabled = busy;
+        });
+    }
+
+    if (passwordConfirmForm) {
+      passwordConfirmForm
+        .querySelectorAll("button, input")
+        .forEach(element => {
+          element.disabled = busy;
+        });
+    }
+
     document.querySelectorAll(".tutor-delete").forEach(button => {
       button.disabled = locked;
     });
@@ -1281,6 +1653,8 @@
 
       #tutorTools button,
       #tutorLogin button,
+      #tutorPasswordReset button,
+      #tutorPasswordConfirm button,
       .tutor-delete {
         flex: initial;
         min-width: auto;
@@ -1318,28 +1692,39 @@
         box-shadow: none;
       }
 
-      #tutorLogin {
+      #tutorLogin,
+      #tutorPasswordReset,
+      #tutorPasswordConfirm {
         width: min(92vw, 380px);
         border: none;
         border-radius: 12px;
         padding: 22px;
       }
 
-      #tutorLogin::backdrop {
+      #tutorLogin::backdrop,
+      #tutorPasswordReset::backdrop,
+      #tutorPasswordConfirm::backdrop {
         background: rgba(0, 0, 0, .55);
       }
 
-      #tutorLogin form {
+      #tutorLogin form,
+      #tutorPasswordReset form,
+      #tutorPasswordConfirm form {
         display: grid;
         gap: 12px;
       }
 
-      #tutorLogin label {
+      #tutorLogin label,
+      #tutorPasswordReset label,
+      #tutorPasswordConfirm label {
         display: grid;
         gap: 5px;
       }
 
-      #tutorLogin input {
+      #tutorLogin input,
+      #tutorPasswordReset input,
+      #tutorPasswordConfirm input {
+        box-sizing: border-box;
         width: 100%;
         padding: 10px;
         border: 1px solid #bbb;
@@ -1428,6 +1813,7 @@
         </label>
 
         <button type="submit">Log in</button>
+        <button type="button" data-forgot>Forgot password?</button>
         <button type="button" data-close>Cancel</button>
       </form>
     `;
@@ -1442,6 +1828,142 @@
 
     loginDialog.addEventListener("close", () => {
       loginForm.elements.password.value = "";
+    });
+
+    loginDialog.querySelector("[data-forgot]")
+      .addEventListener("click", () => {
+        const identity =
+          loginForm.elements.identity.value.trim();
+
+        // If the login identity already looks like an email address,
+        // copy it into the reset form.
+        if (identity.includes("@")) {
+          passwordResetForm.elements.email.value = identity;
+        }
+
+        loginDialog.close();
+        passwordResetDialog.showModal();
+
+        passwordResetForm.elements.email.focus();
+      });
+
+    // ----------------------------------------------------------
+    // Request password reset dialog
+    // ----------------------------------------------------------
+
+    passwordResetDialog = document.createElement("dialog");
+    passwordResetDialog.id = "tutorPasswordReset";
+
+    passwordResetDialog.innerHTML = `
+      <form>
+        <strong>Reset password</strong>
+
+        <p>
+          Enter the email address associated with your account.
+          We will send you a password reset link.
+        </p>
+
+        <label>
+          Email address
+          <input
+            name="email"
+            type="email"
+            autocomplete="email"
+            required
+          >
+        </label>
+
+        <button type="submit">Send reset link</button>
+        <button type="button" data-close>Cancel</button>
+      </form>
+    `;
+
+    document.body.appendChild(passwordResetDialog);
+
+    passwordResetForm =
+      passwordResetDialog.querySelector("form");
+
+    passwordResetForm.addEventListener(
+      "submit",
+      submitPasswordResetRequest
+    );
+
+    passwordResetDialog
+      .querySelector("[data-close]")
+      .addEventListener("click", () => {
+        passwordResetDialog.close();
+
+        if (!auth && !loginDialog.open) {
+          loginDialog.showModal();
+        }
+      });
+
+    // ----------------------------------------------------------
+    // Confirm password reset dialog
+    // ----------------------------------------------------------
+
+    passwordConfirmDialog = document.createElement("dialog");
+    passwordConfirmDialog.id = "tutorPasswordConfirm";
+
+    passwordConfirmDialog.innerHTML = `
+      <form>
+        <strong>Choose a new password</strong>
+
+        <p>
+          Enter the new password that you want to use for your
+          account.
+        </p>
+
+        <label>
+          New password
+          <input
+            name="password"
+            type="password"
+            autocomplete="new-password"
+            required
+          >
+        </label>
+
+        <label>
+          Confirm new password
+          <input
+            name="passwordConfirm"
+            type="password"
+            autocomplete="new-password"
+            required
+          >
+        </label>
+
+        <button type="submit">Change password</button>
+        <button type="button" data-cancel>Cancel</button>
+      </form>
+    `;
+
+    document.body.appendChild(passwordConfirmDialog);
+
+    passwordConfirmForm =
+      passwordConfirmDialog.querySelector("form");
+
+    passwordConfirmForm.addEventListener(
+      "submit",
+      submitPasswordResetConfirmation
+    );
+
+    passwordConfirmDialog
+      .querySelector("[data-cancel]")
+      .addEventListener("click", () => {
+        passwordConfirmForm.reset();
+        passwordConfirmDialog.close();
+        removePasswordResetToken();
+
+        if (!auth && !loginDialog.open) {
+          loginDialog.showModal();
+        }
+      });
+
+    passwordConfirmDialog.addEventListener("close", () => {
+      passwordConfirmForm.elements.password.value = "";
+      passwordConfirmForm.elements.passwordConfirm.value = "";
     });
 
     importInput = document.createElement("input");
@@ -1491,8 +2013,15 @@
         addMessage(FIRST_MESSAGE, "bot", null, nowISO());
       }
 
-      setStatus("Log in to restore your conversation.");
-      loginDialog.showModal();
+      if (getPasswordResetToken()) {
+        setStatus("Choose a new password for your account.");
+        passwordConfirmDialog.showModal();
+
+        passwordConfirmForm.elements.password.focus();
+      } else {
+        setStatus("Log in to restore your conversation.");
+        loginDialog.showModal();
+      }
     } else {
       await run(() => startConversation(freshConversation()));
     }
