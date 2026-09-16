@@ -4,7 +4,9 @@
 
 const tabTitle = "AI Tutor";
 const headerTitle = "Impacts of Science: Mechanics and Society";
-const copyrightText = "© 2026 Dominik Borovský & Jozef Hanč v2.3, powered by OpenAI GPT-5.3";
+const copyrightText = "© 2026 Dominik Borovský & Jozef Hanč v2.4, powered by OpenAI GPT-5.3";
+// const  headerImageUrl = "https://i.postimg.cc/YSFf8VV7/logo-PF-UPJS.png";
+const  headerImageUrl = "https://i.postimg.cc/tTpnTCJM/odf-ufv-logo.png";
 
 
 // ============================================================
@@ -50,12 +52,6 @@ const POCKETBASE_CONVERSATIONS_COLLECTION = "conversations";
 // Use a different value for another activity.
 // Keep this unchanged when you only change the page title.
 const CHAT_ORIGIN = "mechanics-and-society";
-
-// Minimum width of thread numbers:
-// 000, 001, 002, ... 999, 1000.
-//
-// Numbers increment for new conversations, not for messages.
-const CHAT_NUMBER_PADDING = 3;
 
 
 // ============================================================
