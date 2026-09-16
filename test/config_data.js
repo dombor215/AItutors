@@ -4,7 +4,7 @@
 
 const tabTitle = "AI Tutor";
 const headerTitle = "Impacts of Science: Mechanics and Society";
-const copyrightText = "© 2026 Dominik Borovský & Jozef Hanč v2.0, powered by OpenAI GPT-5.3";
+const copyrightText = "© 2026 Dominik Borovský & Jozef Hanč v2.3, powered by OpenAI GPT-5.3";
 
 
 // ============================================================
@@ -14,7 +14,7 @@ const copyrightText = "© 2026 Dominik Borovský & Jozef Hanč v2.0, powered by 
 // AI provider or your existing Cloudflare Worker endpoint.
 const API_URL = "https://ai-wrapper.dominik-borovsky123.workers.dev/v1/chat/completions";
 
-const MODEL_NAME = "sageai-fast";
+const MODEL_NAME = "srobarka-chat";
 
 // Without PocketBase:
 // This value is combined with the key entered by the pupil.
@@ -105,7 +105,7 @@ const showConversationBrowser = true;
 // ============================================================
 
 // Retains your existing pasted-text alteration setting.
-const copyPasteProtection = true;
+const copyPasteProtection = false;
 
 
 // ============================================================
@@ -172,6 +172,10 @@ ${showConversationBrowser
 
 const CONTENT_USER = `
 ## Interactive quizzes
+
+Introduce yourself as Maya, a general AI tutor for physics. Offer students help with anything, ask them for the desired topic or theme. At the begining of the conversation mention that you are able to also provide quizzes if they want to try.
+
+If you are about to include some formulas, use LaTeX, such as $K_E = \frac{1}{2}mv^2$
 
 When a short knowledge check would genuinely help the student,
 return it in a fenced code block that starts with \`\`\`quiz and

@@ -271,14 +271,6 @@
     color: var(--secondary-color);
   }
 
-  .quiz-question {
-    margin: 0.6rem 0;
-    padding: 0.6rem 0.7rem;
-    border-left: 4px solid rgba(0, 131, 56, 0.25);
-    border-radius: 8px;
-    background: rgba(0, 131, 56, 0.04);
-  }
-
   .quiz-prompt {
     margin: 0 0 0.5rem;
     font-weight: 600;
@@ -308,8 +300,9 @@
 
   /* Class selectors intentionally override the global button rules,
      including the compact phone layout further below. */
-  .quiz-check-button {
-    margin-top: 0.4rem;
+  .quiz-navigation button,
+  .quiz-retry,
+  .quiz-submit-results {
     padding: 0.5rem 0.9rem;
     border: none;
     border-radius: 8px;
@@ -325,19 +318,73 @@
     box-shadow: none;
   }
 
+  .quiz-navigation {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.65rem;
+    margin-top: 1rem;
+  }
+
+  .quiz-actions {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.65rem;
+    margin-top: 1rem;
+  }
+
+  .quiz-navigation button:disabled {
+    opacity: 0.45;
+    cursor: not-allowed;
+  }
+
+  .quiz-submit-results {
+    background: #2563eb;
+  }
+
+  .quiz-submit-results:hover:not(:disabled) {
+    background: #1d4ed8;
+  }
+
+  .quiz-submit-results:disabled {
+    opacity: 0.6;
+    cursor: default;
+  }
+
   .quiz-feedback {
     margin-top: 0.5rem;
     font-size: 0.92em;
+    color: #b3261e;
   }
 
-  .quiz-question.is-correct { border-left-color: #22a06b; }
-  .quiz-question.is-correct .quiz-feedback { color: #168354; }
-  .quiz-question.is-incorrect { border-left-color: #dc4c64; }
-  .quiz-question.is-incorrect .quiz-feedback { color: #c9364e; }
+  .quiz-progress {
+    margin: 0 0 0.75rem;
+    color: #6b7280;
+    font-size: 0.9rem;
+  }
 
   .quiz-score {
     margin: 0.6rem 0 0;
     font-weight: 700;
+  }
+
+  .quiz-review {
+    margin-top: 0.85rem;
+    padding: 0.8rem;
+    border-left: 4px solid;
+    border-radius: 8px;
+    background: rgba(128, 128, 128, 0.08);
+  }
+
+  .quiz-review.is-correct { border-left-color: #22a06b; }
+  .quiz-review.is-incorrect { border-left-color: #dc4c64; }
+
+  .quiz-review p {
+    margin: 0.3rem 0;
+  }
+
+  .quiz-explanation {
+    color: #6b7280;
+    font-size: 0.92em;
   }
 
   .quiz-error {
@@ -1550,109 +1597,368 @@ function quizFromElement(el) {
   }
 }
 
-// Builds the quiz card with DOM APIs only, so quiz text is treated as
-// text rather than executable HTML.
-function buildQuizCard(data) {
+// Quiz JSON often carries LaTeX written with $...$ or $$...$$
+// delimiters, but MathJax here is only configured for \(...\) and
+// \[...\]. This converts the dollar forms into the configured ones
+// before the text is placed into the quiz card, leaving any existing
+// \(...\) / \[...\] untouched. Text is inserted with textContent, so
+// the delimiters survive intact for MathJax to typeset.
+function normalizeQuizLatex(text) {
+  text = String(text == null ? "" : text);
+
+  // Display math: $$...$$ → \[...\]
+  text = text.replace(/\$\$([\s\S]+?)\$\$/g, "\\[$1\\]");
+
+  // Inline math: $...$ → \(...\). Skips $$ and empty pairs; the
+  // content must stay on one line, matching the chat renderer.
+  text = text.replace(/(?<!\$)\$(?!\$)([^\$\n]+?)\$(?!\$)/g, "\\($1\\)");
+
+  return text;
+}
+
+// Tells MathJax to forget any math it rendered inside an element
+// before that element's content is replaced, so re-rendering a quiz
+// question or the results view never leaves stale math state behind.
+function clearMath(element) {
+  try {
+    if (window.MathJax && MathJax.typesetClear) {
+      MathJax.typesetClear([element]);
+    }
+  } catch (e) {
+    console.warn("MathJax typesetClear failed:", e);
+  }
+}
+
+// Builds the quiz card shell with DOM APIs only, so quiz text is
+// treated as text rather than executable HTML. The card shows one
+// question at a time; all state lives on card._quizState.
+function buildQuizCard(quiz) {
   const card = document.createElement("section");
   card.className = "quiz-card";
 
-  if (data.title) {
-    const title = document.createElement("div");
+  // State stays attached to this individual quiz card.
+  card._quizState = {
+    quiz: quiz,
+    currentIndex: 0,
+    answers: new Array(quiz.questions.length).fill(null),
+    finished: false
+  };
+
+  if (quiz.title) {
+    const title = document.createElement("h3");
     title.className = "quiz-title";
-    title.textContent = data.title;
+    title.textContent = normalizeQuizLatex(quiz.title);
     card.appendChild(title);
   }
 
-  data.questions.forEach(function (item, qIndex) {
-    const question = document.createElement("div");
-    question.className = "quiz-question";
-    question._quizData = item;
+  const progress = document.createElement("p");
+  progress.className = "quiz-progress";
 
-    const prompt = document.createElement("p");
-    prompt.className = "quiz-prompt";
-    prompt.textContent = (qIndex + 1) + ". " + item.question;
-    question.appendChild(prompt);
+  const questionArea = document.createElement("div");
+  questionArea.className = "quiz-question-area";
 
-    const options = document.createElement("div");
-    options.className = "quiz-options";
+  const feedback = document.createElement("div");
+  feedback.className = "quiz-feedback";
+  feedback.hidden = true;
 
-    const groupName =
-      "quiz-" + Math.random().toString(36).slice(2, 10) + "-q" + qIndex;
+  const navigation = document.createElement("div");
+  navigation.className = "quiz-navigation";
 
-    item.options.forEach(function (optionText, oIndex) {
-      const label = document.createElement("label");
-      label.className = "quiz-option";
+  const previousButton = document.createElement("button");
+  previousButton.type = "button";
+  previousButton.className = "quiz-prev";
+  previousButton.textContent = "Previous";
 
-      const input = document.createElement("input");
-      input.type = "radio";
-      input.name = groupName;
-      input.value = String(oIndex);
+  const nextButton = document.createElement("button");
+  nextButton.type = "button";
+  nextButton.className = "quiz-next";
+  nextButton.textContent = "Next";
 
-      const text = document.createElement("span");
-      text.textContent = optionText;
+  const finishButton = document.createElement("button");
+  finishButton.type = "button";
+  finishButton.className = "quiz-finish";
+  finishButton.textContent = "Finish quiz";
+  finishButton.hidden = true;
 
-      label.appendChild(input);
-      label.appendChild(text);
-      options.appendChild(label);
-    });
+  navigation.append(previousButton, nextButton, finishButton);
 
-    const feedback = document.createElement("div");
-    feedback.className = "quiz-feedback";
-    feedback.hidden = true;
+  const result = document.createElement("div");
+  result.className = "quiz-result";
+  result.hidden = true;
 
-    question.appendChild(options);
-    question.appendChild(feedback);
-    card.appendChild(question);
+  card.append(progress, questionArea, feedback, navigation, result);
+
+  previousButton.addEventListener("click", function () {
+    const state = card._quizState;
+
+    if (state.currentIndex > 0) {
+      state.currentIndex--;
+      updateQuizCard(card);
+    }
   });
 
-  const button = document.createElement("button");
-  button.type = "button";
-  button.className = "quiz-check-button";
-  button.textContent = "Check answers";
-  button.addEventListener("click", function () { checkQuiz(card); });
-  card.appendChild(button);
+  nextButton.addEventListener("click", function () {
+    const state = card._quizState;
+    const selected = questionArea.querySelector("input:checked");
 
-  const score = document.createElement("p");
-  score.className = "quiz-score";
-  score.hidden = true;
-  card.appendChild(score);
+    // Require an answer before moving ahead.
+    if (!selected) {
+      feedback.hidden = false;
+      feedback.textContent = "Choose an answer before continuing.";
+      return;
+    }
+
+    state.answers[state.currentIndex] = Number(selected.value);
+    feedback.hidden = true;
+
+    if (state.currentIndex < state.quiz.questions.length - 1) {
+      state.currentIndex++;
+      updateQuizCard(card);
+    }
+  });
+
+  finishButton.addEventListener("click", function () {
+    const state = card._quizState;
+    const selected = questionArea.querySelector("input:checked");
+
+    if (!selected) {
+      feedback.hidden = false;
+      feedback.textContent = "Choose an answer before finishing.";
+      return;
+    }
+
+    state.answers[state.currentIndex] = Number(selected.value);
+    state.finished = true;
+
+    showQuizResults(card);
+  });
+
+  updateQuizCard(card);
+  typesetMath(card);
 
   return card;
 }
 
-// Answer checking stays entirely in the app.
-function checkQuiz(card) {
-  const questions = card.querySelectorAll(".quiz-question");
-  let correct = 0;
+// Re-renders the current question into the question area, restoring any
+// previously chosen answer.
+function updateQuizCard(card) {
+  const state = card._quizState;
+  const quiz = state.quiz;
+  const index = state.currentIndex;
+  const item = quiz.questions[index];
 
-  questions.forEach(function (question) {
-    const data = question._quizData;
-    const selected = question.querySelector("input:checked");
-    const feedback = question.querySelector(".quiz-feedback");
+  const progress = card.querySelector(".quiz-progress");
+  const questionArea = card.querySelector(".quiz-question-area");
+  const feedback = card.querySelector(".quiz-feedback");
+  const previousButton = card.querySelector(".quiz-prev");
+  const nextButton = card.querySelector(".quiz-next");
+  const finishButton = card.querySelector(".quiz-finish");
 
-    question.classList.remove("is-correct", "is-incorrect");
+  // The question area may hold typeset math from the previously shown
+  // question; tell MathJax to forget it before replacing the content.
+  clearMath(questionArea);
 
-    if (!selected) {
-      feedback.hidden = false;
-      feedback.textContent = "Choose an answer first.";
+  progress.textContent = "Question " + (index + 1) + " of " + quiz.questions.length;
+
+  previousButton.disabled = index === 0;
+
+  // On the last question, replace Next with Finish quiz.
+  const isLastQuestion = index === quiz.questions.length - 1;
+  nextButton.hidden = isLastQuestion;
+  finishButton.hidden = !isLastQuestion;
+
+  feedback.hidden = true;
+  questionArea.replaceChildren();
+
+  const prompt = document.createElement("p");
+  prompt.className = "quiz-prompt";
+  prompt.textContent = (index + 1) + ". " + normalizeQuizLatex(item.question);
+  questionArea.appendChild(prompt);
+
+  const options = document.createElement("div");
+  options.className = "quiz-options";
+
+  // Unique radio group per card so multiple quizzes never interfere.
+  const groupName =
+    "quiz-" + Math.random().toString(36).slice(2, 10) + "-q" + index;
+
+  item.options.forEach(function (optionText, optionIndex) {
+    const label = document.createElement("label");
+    label.className = "quiz-option";
+
+    const input = document.createElement("input");
+    input.type = "radio";
+    input.name = groupName;
+    input.value = optionIndex;
+
+    // Restore a prior answer when navigating backward or forward.
+    if (state.answers[index] === optionIndex) {
+      input.checked = true;
+    }
+
+    const text = document.createElement("span");
+    text.textContent = normalizeQuizLatex(optionText);
+
+    label.append(input, text);
+    options.appendChild(label);
+  });
+
+  questionArea.appendChild(options);
+
+  typesetMath(questionArea);
+}
+
+// Grades the saved answers and shows a per-question review with a
+// retry option. Nothing is revealed until the user finishes.
+function showQuizResults(card) {
+  const state = card._quizState;
+  const quiz = state.quiz;
+  const result = card.querySelector(".quiz-result");
+
+  // MathJax state inside the card is stale once the results view
+  // replaces the question view (and again on each retry).
+  clearMath(card);
+
+  let correctCount = 0;
+
+  quiz.questions.forEach(function (question, index) {
+    if (state.answers[index] === question.answer) {
+      correctCount++;
+    }
+  });
+
+  card.querySelector(".quiz-question-area").hidden = true;
+  card.querySelector(".quiz-feedback").hidden = true;
+  card.querySelector(".quiz-navigation").hidden = true;
+  card.querySelector(".quiz-progress").hidden = true;
+
+  result.hidden = false;
+  result.replaceChildren();
+
+  const heading = document.createElement("h4");
+  heading.textContent = "Quiz complete";
+
+  const score = document.createElement("p");
+  score.className = "quiz-score";
+  score.textContent =
+    "You got " + correctCount + " out of " + quiz.questions.length + " correct.";
+
+  result.append(heading, score);
+
+  quiz.questions.forEach(function (question, index) {
+    const review = document.createElement("div");
+    review.className = "quiz-review";
+
+    const wasCorrect = state.answers[index] === question.answer;
+    review.classList.add(wasCorrect ? "is-correct" : "is-incorrect");
+
+    const questionText = document.createElement("p");
+    questionText.textContent =
+      (index + 1) + ". " + normalizeQuizLatex(question.question);
+
+    const answerText = document.createElement("p");
+    answerText.textContent = wasCorrect
+      ? "Correct."
+      : "Correct answer: " + normalizeQuizLatex(question.options[question.answer]);
+
+    review.append(questionText, answerText);
+
+    if (question.explanation) {
+      const explanation = document.createElement("p");
+      explanation.className = "quiz-explanation";
+      explanation.textContent = normalizeQuizLatex(question.explanation);
+      review.appendChild(explanation);
+    }
+
+    result.appendChild(review);
+  });
+
+  const actionsRow = document.createElement("div");
+  actionsRow.className = "quiz-actions";
+
+  const retryButton = document.createElement("button");
+  retryButton.type = "button";
+  retryButton.className = "quiz-retry";
+  retryButton.textContent = "Try again";
+
+  retryButton.addEventListener("click", function () {
+    state.currentIndex = 0;
+    state.answers = new Array(quiz.questions.length).fill(null);
+    state.finished = false;
+
+    result.hidden = true;
+    card.querySelector(".quiz-question-area").hidden = false;
+    card.querySelector(".quiz-navigation").hidden = false;
+    card.querySelector(".quiz-progress").hidden = false;
+
+    updateQuizCard(card);
+  });
+
+  const submitButton = document.createElement("button");
+  submitButton.type = "button";
+  submitButton.className = "quiz-submit-results";
+  submitButton.textContent = "Submit results to chat";
+
+  submitButton.addEventListener("click", function () {
+    const summary = buildQuizSummary(quiz, state.answers);
+
+    // Prevent a double submission.
+    submitButton.disabled = true;
+    submitButton.textContent = "Results submitted";
+
+    sendUserMessage(summary);
+  });
+
+  actionsRow.append(retryButton, submitButton);
+  result.appendChild(actionsRow);
+
+  typesetMath(result);
+}
+
+// Quiz → chat bridge: a finished quiz builds a short result summary
+// and hands it to the app's own send pipeline, so the tutor receives
+// it as a normal user message and can respond. Missed-question
+// details are capped so long quizzes cannot produce a huge prompt.
+const QUIZ_MAX_MISSED_DETAILS = Infinity;
+
+function buildQuizSummary(quiz, answers) {
+  let correctCount = 0;
+  const missedDetails = [];
+
+  quiz.questions.forEach(function (question, index) {
+    const selectedIndex = answers[index];
+
+    if (selectedIndex === question.answer) {
+      correctCount++;
       return;
     }
 
-    const isCorrect = Number(selected.value) === data.answer;
-
-    question.classList.add(isCorrect ? "is-correct" : "is-incorrect");
-
-    feedback.hidden = false;
-    feedback.textContent = isCorrect
-      ? "Correct. " + (data.explanation || "")
-      : "Not quite. " + (data.explanation || "");
-
-    if (isCorrect) correct++;
+    missedDetails.push(
+      "Question " + (index + 1) + ': "' + question.question + '" ' +
+      'I chose "' + (question.options[selectedIndex] || "no answer") +
+      '" ; the correct answer was "' + question.options[question.answer] + '".'
+    );
   });
 
-  const score = card.querySelector(".quiz-score");
-  score.hidden = false;
-  score.textContent = "Score: " + correct + " / " + questions.length;
+  const total = quiz.questions.length;
+  const percent = Math.round((correctCount / total) * 100);
+
+  let summary =
+    'Quiz result — "' + (quiz.title || "Untitled quiz") + '": ' +
+    correctCount + "/" + total + " correct (" + percent + "%).";
+
+  if (missedDetails.length) {
+    summary +=
+      "\n\n" + missedDetails.slice(0, QUIZ_MAX_MISSED_DETAILS).join("\n") +
+      (missedDetails.length > QUIZ_MAX_MISSED_DETAILS
+        ? "\n(and " + (missedDetails.length - QUIZ_MAX_MISSED_DETAILS) + " more missed)"
+        : "") +
+      "\n\nPlease briefly help me review what I missed.";
+  } else {
+    summary += "\n\nI answered everything correctly; please give me a slightly harder follow-up quiz.";
+  }
+
+  return summary;
 }
 
 function removeAttachment(index) { attachedFiles.splice(index, 1); renderAttachments(); }
@@ -2081,6 +2387,18 @@ function addMessage(content, sender, attachments, timestamp) {
 
   typesetMath(msg);
   return msg;
+}
+
+// Sends text as if the user had typed it: adds the user bubble and
+// runs the existing send pipeline, so the tutor receives quiz
+// results exactly like a normal message. Used by quiz result
+// submission; a no-op if a request is already in flight.
+async function sendUserMessage(text) {
+  if (typeof text === "string") {
+    input.value = text;
+  }
+
+  await sendMessage();
 }
 
 function addProcessingMessage() {

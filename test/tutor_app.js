@@ -26,6 +26,7 @@
   let dirty = false;
   let awaitingReply = false;
   let attachmentJobs = 0;
+  let pendingQuizSummary = null;
   let localNumber = -1;
   let historyPage = 1;
   let historyPages = 1;
@@ -234,6 +235,7 @@
       sessionStartTime,
       exportTime: nowISO(),
       awaitingReply,
+      pendingQuizSummary,
       messages: messages.map(message => {
         const { wasPasted, ...rest } = message;
         return rest;
@@ -330,6 +332,10 @@
           ? value.sessionStartTime
           : nowISO(),
       awaitingReply: value?.awaitingReply === true,
+      pendingQuizSummary:
+        typeof value?.pendingQuizSummary === "string"
+          ? value.pendingQuizSummary
+          : null,
       messages: validated
     };
 
@@ -359,6 +365,7 @@
     return {
       sessionStartTime: timestamp,
       awaitingReply: false,
+      pendingQuizSummary: null,
       messages: initial
     };
   }
@@ -395,6 +402,10 @@
     sessionStartTime = document.sessionStartTime;
     currentRecord = record;
     awaitingReply = document.awaitingReply === true;
+    pendingQuizSummary =
+      typeof document.pendingQuizSummary === "string"
+        ? document.pendingQuizSummary
+        : null;
 
     const lastVisible = messages.filter(
       message => !message.deleted && message.role !== "system"
@@ -667,6 +678,14 @@
       await loadRecord(latest.items[0].id);
     } else {
       await startConversation(freshConversation());
+    }
+
+    // A quiz result submitted while logged out goes out once the
+    // conversation is restored.
+    if (pendingQuizSummary && ready && !awaitingReply) {
+      const summary = pendingQuizSummary;
+      pendingQuizSummary = null;
+      window.sendUserMessage(summary);
     }
 
     await refreshHistorySafely();
@@ -959,6 +978,13 @@
         await restoreLatest();
       }
 
+      // A quiz result submitted while logged out goes out now.
+      if (pendingQuizSummary && ready && !awaitingReply) {
+        const summary = pendingQuizSummary;
+        pendingQuizSummary = null;
+        window.sendUserMessage(summary);
+      }
+
       loginDialog.close();
     });
   }
@@ -971,6 +997,7 @@
     ready = false;
     dirty = false;
     awaitingReply = false;
+    pendingQuizSummary = null;
     messages = [];
 
     input.value = "";
@@ -1258,6 +1285,16 @@
     }
   }
 
+  window.sendUserMessage = async function(text) {
+    if (typeof text !== "string" || !text.trim()) return;
+
+    pendingQuizSummary = text;
+
+    // The credential check happens inside sendMessage; if it fails
+    // the summary stays queued and goes out with the next send.
+    await window.sendMessage();
+  };
+
   window.sendMessage = async function() {
     if (!usable()) return;
 
@@ -1265,6 +1302,8 @@
       const key = getApiKey();
 
       if (!key) {
+        // A queued quiz summary stays pending; it goes out with the
+        // next successful send once a key is configured.
         throw new Error(
           DATABASE_MODE
             ? "The AI endpoint credential has not been configured."
@@ -1273,7 +1312,12 @@
       }
 
       if (!awaitingReply) {
-        const text = input.value.trim();
+        // Quiz results are delivered through this path as programmatic
+        // sends; the tutor treats them like any typed message.
+        const quizSummary = pendingQuizSummary;
+        pendingQuizSummary = null;
+
+        const text = (quizSummary ?? input.value).trim();
 
         if (attachedFiles.some(file => file.processing)) {
           throw new Error("Files are still being processed.");
@@ -1387,6 +1431,14 @@
         currentTypingEl?.remove();
         currentTypingEl = null;
         renderConversation();
+      }
+
+      // If a quiz summary arrived while a reply was pending, send it
+      // on immediately so the tutor answers it without another click.
+      if (pendingQuizSummary && !awaitingReply) {
+        const summary = pendingQuizSummary;
+        pendingQuizSummary = null;
+        await window.sendUserMessage(summary);
       }
     });
 
