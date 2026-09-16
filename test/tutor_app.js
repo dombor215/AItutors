@@ -109,8 +109,14 @@
     }
 
     try {
-      return DOMPurify.sanitize(originalMarkdown(String(text)), {
+      const html = originalMarkdown(String(text));
+
+      // Keep quiz containers and their data attributes through
+      // sanitization; everything else stays restricted.
+      return DOMPurify.sanitize(html, {
         USE_PROFILES: { html: true },
+        ADD_TAGS: ["section", "label"],
+        ADD_ATTR: ["data-quiz", "for", "value"],
         FORBID_TAGS: ["img", "style", "form", "input", "button"],
         FORBID_ATTR: ["style"]
       });
@@ -470,6 +476,10 @@
         attachments,
         message.timestamp || null
       );
+
+      if (message.role !== "user") {
+        renderQuizzes(element);
+      }
 
       if (allowDelete) {
         const button = document.createElement("button");
@@ -1344,7 +1354,8 @@
           }
 
           // Display partial output as plain text.
-          // The existing renderer formats the completed answer.
+          // The existing renderer formats the completed answer,
+          // including interactive quizzes, once the stream ends.
           previewTextEl.textContent = partialText;
 
           if (nearBottom) {
@@ -1360,6 +1371,13 @@
           content: reply,
           timestamp: nowISO()
         });
+
+        // Render interactive quizzes in the live reply element before
+        // the conversation is re-rendered from saved history.
+        if (currentTypingEl) {
+          currentTypingEl.innerHTML = renderMarkdown(reply);
+          renderQuizzes(currentTypingEl);
+        }
 
         awaitingReply = false;
         markDirty();

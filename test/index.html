@@ -255,6 +255,101 @@
     background: rgba(128, 128, 128, 0.05);
   }
 
+  /* ========= Interactive quizzes ========= */
+  .quiz-card {
+    margin: 0.8rem 0;
+    padding: 0.9rem;
+    border: 1px solid rgba(0, 131, 56, 0.35);
+    border-radius: var(--border-radius);
+    background: rgba(0, 131, 56, 0.05);
+  }
+
+  .quiz-title {
+    margin: 0 0 0.6rem;
+    font-size: 1.02em;
+    font-weight: 700;
+    color: var(--secondary-color);
+  }
+
+  .quiz-question {
+    margin: 0.6rem 0;
+    padding: 0.6rem 0.7rem;
+    border-left: 4px solid rgba(0, 131, 56, 0.25);
+    border-radius: 8px;
+    background: rgba(0, 131, 56, 0.04);
+  }
+
+  .quiz-prompt {
+    margin: 0 0 0.5rem;
+    font-weight: 600;
+  }
+
+  .quiz-options {
+    display: grid;
+    gap: 0.4rem;
+  }
+
+  .quiz-option {
+    display: flex;
+    align-items: flex-start;
+    gap: 0.5rem;
+    padding: 0.45rem 0.6rem;
+    border-radius: 7px;
+    cursor: pointer;
+  }
+
+  .quiz-option:hover { background: rgba(0, 131, 56, 0.1); }
+
+  .quiz-option input {
+    margin: 0.25rem 0 0;
+    accent-color: var(--primary-color);
+    flex-shrink: 0;
+  }
+
+  /* Class selectors intentionally override the global button rules,
+     including the compact phone layout further below. */
+  .quiz-check-button {
+    margin-top: 0.4rem;
+    padding: 0.5rem 0.9rem;
+    border: none;
+    border-radius: 8px;
+    background: linear-gradient(135deg, var(--primary-color), var(--secondary-color));
+    color: white;
+    font-weight: 600;
+    font-size: 0.9em;
+    cursor: pointer;
+    min-width: 0;
+    max-width: none;
+    height: auto;
+    flex: 0 0 auto;
+    box-shadow: none;
+  }
+
+  .quiz-feedback {
+    margin-top: 0.5rem;
+    font-size: 0.92em;
+  }
+
+  .quiz-question.is-correct { border-left-color: #22a06b; }
+  .quiz-question.is-correct .quiz-feedback { color: #168354; }
+  .quiz-question.is-incorrect { border-left-color: #dc4c64; }
+  .quiz-question.is-incorrect .quiz-feedback { color: #c9364e; }
+
+  .quiz-score {
+    margin: 0.6rem 0 0;
+    font-weight: 700;
+  }
+
+  .quiz-error {
+    margin: 0.8rem 0;
+    padding: 0.6rem 0.8rem;
+    border: 1px solid #f0b9b3;
+    border-radius: 8px;
+    background: #fdecea;
+    color: #b3261e;
+    font-size: 0.92em;
+  }
+
   /* ========= Timestamp ========= */
   .message-timestamp {
     font-size: 11px;
@@ -1356,24 +1451,208 @@ async function processAndAttach(file) {
       showToast(`❌ Failed: "${file.name}": ${err.message}`);
       entry.textContent = "(Failed to extract text)";
     }
-    entry.processing = false;
-    renderAttachments();
-
-  } else if (isTextFile(file)) {
-    entry.textContent = await readFileAsText(file);
-    attachedFiles.push(entry);
-    renderAttachments();
-
-  } else {
-    try {
-      const text = await readFileAsText(file);
-      const nullCount = (text.match(/\0/g) || []).length;
-      if (nullCount > text.length * 0.01) { showToast(`⚠️ "${file.name}" appears binary.`); }
-      entry.textContent = text;
-    } catch { showToast(`❌ Could not read "${file.name}".`); return; }
-    attachedFiles.push(entry);
-    renderAttachments();
   }
+}
+
+// ===================== Interactive quizzes =====================
+// The AI returns quiz content inside a fenced ```quiz block containing
+// JSON. This app owns the rendering and the answer-checking logic; the
+// AI never supplies executable code. Quiz JSON survives the markdown
+// pipeline through an HTML data attribute and DOMPurify (div + data-*
+// are allowed by the sanitizer profile), so quizzes render correctly
+// in both index.html and tutor_app.js message paths.
+
+function parseQuizJson(json) {
+  json = String(json).trim();
+
+  // Some models wrap the payload in a ```json (or ```quiz) fence or add
+  // surrounding prose fences.
+  const fence = json.match(/^```(?:json|quiz)?\s*\n?([\s\S]*?)\n?```$/i);
+  if (fence) json = fence[1].trim();
+
+  let data;
+  try {
+    data = JSON.parse(json);
+  } catch (err) {
+    return { error: "its data was invalid JSON (" + err.message + ")." };
+  }
+
+  const questions = Array.isArray(data && data.questions)
+    ? data.questions
+    : null;
+
+  if (!questions || questions.length === 0) {
+    return { error: "it has no questions array." };
+  }
+
+  if (questions.length > 30) {
+    return { error: "it contains more than 30 questions." };
+  }
+
+  const cleaned = [];
+
+  for (let i = 0; i < questions.length; i++) {
+    const q = questions[i] || {};
+    const options = Array.isArray(q.options) ? q.options : null;
+
+    if (!options || options.length < 2) {
+      return { error: "question " + (i + 1) + " has fewer than two options." };
+    }
+
+    if (options.length > 8) {
+      return { error: "question " + (i + 1) + " has more than eight options." };
+    }
+
+    let answer = typeof q.answer === "number"
+      ? q.answer
+      : parseInt(q.answer, 10);
+
+    if (!Number.isInteger(answer) || answer < 0 || answer >= options.length) {
+      return { error: "question " + (i + 1) + " has an invalid answer index." };
+    }
+
+    const texts = [];
+    for (let j = 0; j < options.length; j++) {
+      texts.push(String(options[j] == null ? "" : options[j]));
+    }
+
+    cleaned.push({
+      question: String(q.question == null ? "" : q.question),
+      options: texts,
+      answer: answer,
+      explanation: q.explanation == null ? "" : String(q.explanation)
+    });
+  }
+
+  return {
+    quiz: {
+      title: data.title == null ? "" : String(data.title),
+      questions: cleaned
+    }
+  };
+}
+
+function quizToDataAttribute(quiz) {
+  return JSON.stringify(quiz)
+    .replace(/&/g, "&amp;")
+    .replace(/"/g, "&quot;")
+    .replace(/</g, "&lt;")
+    .replace(/>/g, "&gt;");
+}
+
+function quizFromElement(el) {
+  try {
+    const parsed = JSON.parse(el.getAttribute("data-quiz"));
+    if (!parsed || !Array.isArray(parsed.questions)) return null;
+    return parsed;
+  } catch {
+    return null;
+  }
+}
+
+// Builds the quiz card with DOM APIs only, so quiz text is treated as
+// text rather than executable HTML.
+function buildQuizCard(data) {
+  const card = document.createElement("section");
+  card.className = "quiz-card";
+
+  if (data.title) {
+    const title = document.createElement("div");
+    title.className = "quiz-title";
+    title.textContent = data.title;
+    card.appendChild(title);
+  }
+
+  data.questions.forEach(function (item, qIndex) {
+    const question = document.createElement("div");
+    question.className = "quiz-question";
+    question._quizData = item;
+
+    const prompt = document.createElement("p");
+    prompt.className = "quiz-prompt";
+    prompt.textContent = (qIndex + 1) + ". " + item.question;
+    question.appendChild(prompt);
+
+    const options = document.createElement("div");
+    options.className = "quiz-options";
+
+    const groupName =
+      "quiz-" + Math.random().toString(36).slice(2, 10) + "-q" + qIndex;
+
+    item.options.forEach(function (optionText, oIndex) {
+      const label = document.createElement("label");
+      label.className = "quiz-option";
+
+      const input = document.createElement("input");
+      input.type = "radio";
+      input.name = groupName;
+      input.value = String(oIndex);
+
+      const text = document.createElement("span");
+      text.textContent = optionText;
+
+      label.appendChild(input);
+      label.appendChild(text);
+      options.appendChild(label);
+    });
+
+    const feedback = document.createElement("div");
+    feedback.className = "quiz-feedback";
+    feedback.hidden = true;
+
+    question.appendChild(options);
+    question.appendChild(feedback);
+    card.appendChild(question);
+  });
+
+  const button = document.createElement("button");
+  button.type = "button";
+  button.className = "quiz-check-button";
+  button.textContent = "Check answers";
+  button.addEventListener("click", function () { checkQuiz(card); });
+  card.appendChild(button);
+
+  const score = document.createElement("p");
+  score.className = "quiz-score";
+  score.hidden = true;
+  card.appendChild(score);
+
+  return card;
+}
+
+// Answer checking stays entirely in the app.
+function checkQuiz(card) {
+  const questions = card.querySelectorAll(".quiz-question");
+  let correct = 0;
+
+  questions.forEach(function (question) {
+    const data = question._quizData;
+    const selected = question.querySelector("input:checked");
+    const feedback = question.querySelector(".quiz-feedback");
+
+    question.classList.remove("is-correct", "is-incorrect");
+
+    if (!selected) {
+      feedback.hidden = false;
+      feedback.textContent = "Choose an answer first.";
+      return;
+    }
+
+    const isCorrect = Number(selected.value) === data.answer;
+
+    question.classList.add(isCorrect ? "is-correct" : "is-incorrect");
+
+    feedback.hidden = false;
+    feedback.textContent = isCorrect
+      ? "Correct. " + (data.explanation || "")
+      : "Not quite. " + (data.explanation || "");
+
+    if (isCorrect) correct++;
+  });
+
+  const score = card.querySelector(".quiz-score");
+  score.hidden = false;
+  score.textContent = "Score: " + correct + " / " + questions.length;
 }
 
 function removeAttachment(index) { attachedFiles.splice(index, 1); renderAttachments(); }
@@ -1448,6 +1727,24 @@ document.addEventListener("drop", async (e) => {
   if (e.dataTransfer?.files) for (const file of e.dataTransfer.files) await processAndAttach(file);
 });
 
+// After bot message HTML is in the DOM, replace each quiz container
+// placeholder with the fully interactive card.
+function renderQuizzes(rootElement) {
+  if (!rootElement || !rootElement.querySelectorAll) return;
+
+  rootElement.querySelectorAll(".quiz-container").forEach(function (target) {
+    const data = quizFromElement(target);
+    if (!data) {
+      target.replaceWith(Object.assign(document.createElement("div"), {
+        className: "quiz-error",
+        textContent: "⚠️ Quiz could not be rendered."
+      }));
+      return;
+    }
+    target.replaceWith(buildQuizCard(data));
+  });
+}
+
 // ===================== Markdown / MathJax =====================
 function renderMarkdown(text) {
   const placeholders = [];
@@ -1457,6 +1754,21 @@ function renderMarkdown(text) {
     placeholders.push({ content: content, isHtml: !!isHtml });
     return '\x00PH' + idx + 'PH\x00';
   }
+
+  // Interactive quizzes: extracted before generic code fences. The
+  // placeholder starts with "<div", so the paragraph logic below leaves
+  // it unwrapped, and DOMPurify keeps it (div + data-* are allowed).
+  text = text.replace(/```quiz[^\n]*\n([\s\S]*?)```/gi, function (m, json) {
+    const parsed = parseQuizJson(json);
+    if (parsed.error) {
+      const safe = parsed.error
+        .replace(/&/g, "&amp;")
+        .replace(/</g, "&lt;")
+        .replace(/>/g, "&gt;");
+      return ph('<div class="quiz-error">⚠️ Quiz could not be rendered: ' + safe + "</div>", true);
+    }
+    return ph('<div class="quiz-container" data-quiz="' + quizToDataAttribute(parsed.quiz) + '"></div>', true);
+  });
 
   text = text.replace(/```(\w*)\n?([\s\S]*?)```/g, function(m, lang, code) {
     var esc = code.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
@@ -1763,6 +2075,10 @@ function addMessage(content, sender, attachments, timestamp) {
   chatBox.appendChild(msg);
   chatBox.scrollTop = chatBox.scrollHeight;
 
+  if (sender === "bot") {
+    renderQuizzes(msg);
+  }
+
   typesetMath(msg);
   return msg;
 }
@@ -1806,6 +2122,7 @@ async function typeBotMessage(element, fullText, timestamp) {
 
   cursor.remove();
   element.innerHTML = renderMarkdown(fullText);
+  renderQuizzes(element);
 
   if (timestamp) {
     element.appendChild(createTimestampEl(timestamp));
