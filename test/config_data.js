@@ -171,5 +171,23 @@ ${showConversationBrowser
 // ============================================================
 
 const CONTENT_USER = `
+## Interactive quizzes
 
+When a short knowledge check would genuinely help the student,
+return it in a fenced code block that starts with \`\`\`quiz and
+contains valid JSON with this shape:
+
+\`\`\`quiz
+{"title": "Quiz title", "questions": [{"question": "...", "options": ["..."], "answer": 0, "explanation": "..."}]}
+\`\`\`
+
+Rules for quiz blocks:
+- Use 1-10 questions, each with 2-6 options.
+- "answer" is the zero-based index of the correct option.
+- Include a short optional "explanation" shown after checking.
+- Keep the quiz relevant to the current discussion topic.
+- Never generate <script>, <iframe>, <form>, or full HTML documents;
+  quizzes must be quiz JSON blocks only.
+Use quizzes sparingly: when the student asks to be tested, when a
+topic is completed, or when a quick check would consolidate learning.
 `;
