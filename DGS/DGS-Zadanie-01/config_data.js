@@ -111,7 +111,7 @@ const copyPasteProtection = true;
 
 // Markdown is supported.
 
-const FIRST_MESSAGE = `Vitaj v chate k zadaniu *01 Mobil a bezpečnosť*. V rámci tejto konverzácie si upevníš nadobudnuté poznatky a v podobe sebareflexie sa pokúsiš s asistenciou zistiť, kde si sa už stretol/-a s pojmami z tohto zadania:
+const FIRST_MESSAGE = `Vitaj v chate k zadaniu *01 Mobil a bezpečnosť*. V rámci tejto konverzácie si upevníš nadobudnuté poznatky a v podobe asistovanej sebareflexie sa pokúsiš zistiť, kde si sa už stretol/-la s pojmami z tohto zadania:
 
 1. **Bezpečné heslá**
 2. **Digitálna stopa a profily v prehliadači**
