@@ -35,6 +35,23 @@
       gap:0.75rem;
       margin-bottom:0.5rem;
     }
+	
+	.info{
+	  margin:0.5rem 0 1rem;
+	  font-size:0.95rem;
+	  line-height:1.55;
+	}
+	.info p{
+	  margin:0.5rem 0;
+	}
+	.info ul{
+	  margin:0.5rem 0;
+	  padding-left:1.25rem;
+	}
+	.info li{
+	  margin:0.25rem 0;
+	}
+	
     .logo{
       width:56px;
       height:56px;
@@ -106,21 +123,32 @@
 <body>
   <main class="container" role="main">
     <header>
-      <div class="logo" aria-hidden="true">AI</div>
+      <div class="logo" aria-hidden="true">DGS</div>
       <div>
-        <h1>AI Tutors</h1>
-        <p class="lead">Choose an AI tutor or topic to begin a guided discussion and learning session.</p>
+        <h1>AI tútori</h1>
+        <p class="lead"><em>Zbierka AI tútorov pre predmet Digitálna gramotnosť študenta (DGS) na UPJŠ.</em></p>
       </div>
     </header>
+	<div class="info">
+	  <p>Pre komunikáciu s AI tútorom použi ako login <strong>gmailovú adresu, ktorú si použil/-a pre prihlásenie do Google Triedy</strong>. Pri prvom prihlásení zvoľ <strong>"Reset password"</strong> – príde ti mail s odkazom, kde si nastavíš nové heslo, prípadne si ho vieš kedykoľvek obnoviť, ak ho zabudneš.</p>
+
+	  <p>Predtým, než začneš používať tútorov, uisti sa, že sa tvoje konverzácie <strong>ukladajú</strong>:</p>
+
+	  <ul>
+		<li><strong>použi tútora <em>"Test"</em></strong>, popíš si s ním niečo,</li>
+		<li><strong>skús sa odhlásiť</strong>, zavrieť prehliadač/tab a <strong>znova sa prihlásiť</strong>,</li>
+		<li>ak po opätovnom prihlásení <strong>vidíš predošlé správy</strong>, tak je všetko v poriadku,</li>
+		<li>ak budeš pracovať aj na iných zariadeniach, skontroluj si, či sa ti správy <strong>synchronizujú</strong> aj na nich.</li>
+	  </ul>
+
+	  <p>Ak máš problémy s prihlásením, nastavením hesla alebo synchronizáciou chatov, kontaktuj správcu tútorov na <a href="mailto:dominik.borovsky@student.upjs.sk">dominik.borovsky@student.upjs.sk</a>.</p>
+
+	  <p>Vyber tútora, s ktorým chceš komunikovať alebo <strong>interakcia s ním je súčasťou zadania</strong>.</p>
+	</div>
 
     <nav aria-label="AI tutors and topics">
       <ul>
-        <li><a href="DGS-AI-Tutor/index.html" target="_blank" rel="noopener noreferrer">Digitálna gramotnosť študenta: AI tútor<span class="meta">/DGS-AI-Tutor</span></a></li>
-		<li><a href="MYP5-waves/index.html" target="_blank" rel="noopener noreferrer">MYP5 - Impacts of Science: Waves and Society<span class="meta">/MYP5-waves</span></a></li>
-        <li><a href="MYP4-mechanics/index.html" target="_blank" rel="noopener noreferrer">MYP4 - Impacts of Science: Mechanics and Society<span class="meta">/MYP4-mechanics</span></a></li>
-		<li><a href="DOD-ModelovanieVln/index.html" target="_blank" rel="noopener noreferrer">DOD - Kvapka v mori alebo fyzika hladiny vody<span class="meta">/DOD-ModelovanieVln</span></a></li>
-		<li><a href="LetnaSkola-JupyterVizualizacie/Fyzika,_ktorá_sa_dá_vizualizovať_Cvič.html" target="_blank" rel="noopener noreferrer">Letná Škola ÚFV UPJŠ 2026<br>Fyzika, ktorá sa dá vizualizovať: Jupyter Notebook v akcii<span class="meta">/LetnaSkola-JupyterVizualizacie</span></a></li>
-		<li><a href="DGS/index.html" target="_blank" rel="noopener noreferrer">DGS<br>Tútori pre výučbu v predmete Digitálna gramotnosť študent (DGS)<span class="meta">/DGS</span></a></li>
+		<li><a href="test/index.html" target="_blank" rel="noopener noreferrer">Test<br>Na tomto tútorovi otestuj, či sa vieš prihlásiť do chatu a či sa ukladajú konverzácie (naprieč zariadeniami, ak zavrieš prehliadač a znovu otvoríš a pod.)<span class="meta">/DGS</span></a></li>
       </ul>
     </nav>
   </main>
