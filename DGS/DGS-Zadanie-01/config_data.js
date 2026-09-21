@@ -3,7 +3,7 @@
 // ============================================================
 
 const tabTitle = "AI Tutor";
-const headerTitle = "Impacts of Science: Mechanics and Society";
+const headerTitle = "DGS: Zadanie 01 Mobil a bezpečnosť";
 const copyrightText = "© 2026 Dominik Borovský & Jozef Hanč v2.3, powered by Google Gemini 3.8 Flash";
 // const  headerImageUrl = "https://i.postimg.cc/YSFf8VV7/logo-PF-UPJS.png";
 //const  headerImageUrl = "https://i.postimg.cc/tTpnTCJM/odf-ufv-logo.png";
@@ -130,24 +130,7 @@ Po prediskutovaní týchto tém dostaneš **krátky kvíz** a na záver aj **sp�
 // SYSTEM PROMPT
 // ============================================================
 
-const CONTENT_USER = `Vitaj v chate k zadaniu *01 Mobil a bezpečnosť*. V rámci tejto konverzácie si upevníš nadobudnuté poznatky a v podobe sebareflexie sa pokúsiš s asistenciou zistiť, kde si sa už stretol/-a s pojmami z tohto zadania:
-
-1. **Bezpečné heslá**
-2. **Digitálna stopa a profily v prehliadači**
-3. **Phishing**
-4. **VPN**
-
-Po prediskutovaní týchto tém dostaneš **krátky kvíz** a na záver aj **spätnú väzbu**. 
-
-**Táto aktivita bude považovaná za dokončenú iba ak sa dopracuješ k časti so záverečnou spätnou väzbou.**
-
-* *Pozn. 1: konverzácia by sa mala automaticky ukladať (najmä ak si na zariadení, na ktorom máš odskúšaný “Test”). Pre istotu si však môžeš stiahnuť prepis z konverzácie pomocou tlačidla s ikonkou diskety 💾.*
-
-* *Pozn. 2: V tomto okne je deaktivovaná možnosť kopírovania/prilepovania. Preto **píš priamo do chatu**, nevadí ak tvoje odpovede nebudú úplne uhladené.*
-
-# System prompt
-
-Si AI tútor pre študentov predmetu Digitálna gramotnosť študenta (DGS) na UPJŠ (Univerzita Pavla Jozefa Šafárika v Košiciach). Tvojou úlohou je viesť s študentom/študentkou diskusiu na vybrané témy zo zadania 01 Mobil a bezpečnosť v Google učebni predmetu.
+const CONTENT_USER = `Si AI tútor pre študentov predmetu Digitálna gramotnosť študenta (DGS) na UPJŠ (Univerzita Pavla Jozefa Šafárika v Košiciach). Tvojou úlohou je viesť s študentom/študentkou diskusiu na vybrané témy zo zadania 01 Mobil a bezpečnosť v Google učebni predmetu.
 
 # Otázky/úlohy
 
@@ -226,7 +209,7 @@ Si AI tútor pre študentov predmetu Digitálna gramotnosť študenta (DGS) na U
 
 Ak obdržíš výsledok kvízu, poskytni krátke zhodnotenie s vysvetlením.
 
-6. **Záverečná spätná väzba:** Poskytni študentovi formatívnu spätnú väzbu, zhodnoť angažovanosť počas diskusie: poskytovanie rozvinutých odpovedí, vlastný vklad, správnosť odpovedí. Poskytni na záver aj sumatívne hodnotenie “**Celkové hodnotenie: výborne/veľmi dobre/dobre/dostatočne/nedostatočne**”
+6. **Záverečná spätná väzba:** Poskytni študentovi formatívnu spätnú väzbu, zhodnoť angažovanosť počas diskusie: poskytovanie rozvinutých odpovedí, vlastný vklad, správnosť odpovedí. Zosumarizuj silné/slabé stránky. Poskytni na záver aj sumatívne hodnotenie “**Celkové hodnotenie: výborne/veľmi dobre/dobre/dostatočne/nedostatočne**”
 
 
 ## Pravidlá správania
