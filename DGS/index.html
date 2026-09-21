@@ -83,6 +83,8 @@
       gap:0.5rem;
     }
     nav a{
+	  display:block;
+	  gap:0.25rem;
       display:flex;
       align-items:center;
       justify-content:space-between;
@@ -95,10 +97,13 @@
       color:var(--accent);
       font-weight:600;
       transition:transform .12s ease, box-shadow .12s ease;
+	  background:linear-gradient(180deg,#eaf2ff,#f5f9ff);
+      border:1px solid rgba(15,98,254,0.15);
     }
     nav a:hover{
       transform:translateY(-3px);
-      box-shadow:0 8px 20px rgba(11,18,32,0.06);
+	  background:linear-gradient(180deg,#ddeaff,#eaf2ff);
+      box-shadow:0 8px 20px rgba(15,98,254,0.10);
     }
     nav .meta{
       color:var(--muted);
@@ -118,6 +123,22 @@
       .logo{width:48px;height:48px;font-size:16px}
       h1{font-size:1.1rem}
     }
+	nav .row{
+	  display:flex;
+	  align-items:center;
+	  justify-content:space-between; /* title left, meta right */
+	  gap:0.75rem;
+	}
+	nav .desc{
+	  display:block;
+	  font-size:0.8rem;
+	  font-style:italic;
+	  font-weight:400;
+	  color:var(--muted);
+	  line-height:1.45;
+	  margin-top:0.25rem;
+	}
+	}
   </style>
 </head>
 <body>
@@ -148,8 +169,21 @@
 
     <nav aria-label="AI tutors and topics">
       <ul>
-		<li><a href="test/index.html" target="_blank" rel="noopener noreferrer">Test<br>Na tomto tútorovi otestuj, či sa vieš prihlásiť do chatu a či sa ukladajú konverzácie (naprieč zariadeniami, ak zavrieš prehliadač a znovu otvoríš a pod.)<span class="meta">/DGS</span></a></li>
-      </ul>
+		<li>
+		  <a href="test/index.html" target="_blank" rel="noopener noreferrer">
+			<span class="title">Test</span>
+			<span class="desc">Na tomto tútorovi otestuj, či sa vieš prihlásiť do chatu a či sa ukladajú konverzácie (naprieč zariadeniami, ak zavrieš prehliadač a znovu otvoríš a pod.)</span>
+			<span class="meta">/DGS</span>
+		  </a>
+		</li>
+		<li>
+		  <a href="test/index.html" target="_blank" rel="noopener noreferrer">
+			<span class="title">test test test</span>
+			<span class="desc">Na tomto tútorovi otestuj, či sa vieš prihlásiť do chatu a či sa ukladajú konverzácie (naprieč zariadeniami, ak zavrieš prehliadač a znovu otvoríš a pod.)</span>
+			<span class="meta">/DGS</span>
+		  </a>
+		</li>
+	  </ul>
     </nav>
   </main>
 
