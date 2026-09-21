@@ -4,7 +4,7 @@
 
 const tabTitle = "AI Tutor";
 const headerTitle = "Impacts of Science: Mechanics and Society";
-const copyrightText = "© 2026 Dominik Borovský & Jozef Hanč v2.4, powered by OpenAI GPT-5.3";
+const copyrightText = "© 2026 Dominik Borovský & Jozef Hanč v2.3, powered by Google Gemini 3.8 Flash";
 // const  headerImageUrl = "https://i.postimg.cc/YSFf8VV7/logo-PF-UPJS.png";
 const  headerImageUrl = "https://i.postimg.cc/tTpnTCJM/odf-ufv-logo.png";
 
@@ -16,7 +16,7 @@ const  headerImageUrl = "https://i.postimg.cc/tTpnTCJM/odf-ufv-logo.png";
 // AI provider or your existing Cloudflare Worker endpoint.
 const API_URL = "https://ai-wrapper.dominik-borovsky123.workers.dev/v1/chat/completions";
 
-const MODEL_NAME = "srobarka-chat";
+const MODEL_NAME = "odf-ufv-dgs-chat";
 
 // Without PocketBase:
 // This value is combined with the key entered by the pupil.
@@ -27,7 +27,7 @@ const MODEL_NAME = "srobarka-chat";
 //
 // Any value in this file is visible to someone inspecting the page.
 // Do not put PocketBase administrator credentials here.
-const API_FIRST_PART = "odf*ufv*sage";
+const API_FIRST_PART = "dgs*chat";
 
 
 // ============================================================
@@ -41,8 +41,8 @@ const API_FIRST_PART = "odf*ufv*sage";
 const POCKETBASE_URL = "https://mauve-vole.pikapod.net";
 
 // Proposed collection names for the website implementation.
-const POCKETBASE_USERS_COLLECTION = "users";
-const POCKETBASE_CONVERSATIONS_COLLECTION = "conversations";
+const POCKETBASE_USERS_COLLECTION = "dgs_students";
+const POCKETBASE_CONVERSATIONS_COLLECTION = "dgs_conversations";
 
 // Stable identifier for this tutor/activity.
 //
@@ -51,7 +51,7 @@ const POCKETBASE_CONVERSATIONS_COLLECTION = "conversations";
 //
 // Use a different value for another activity.
 // Keep this unchanged when you only change the page title.
-const CHAT_ORIGIN = "mechanics-and-society";
+const CHAT_ORIGIN = "dgs2026-test";
 
 
 // ============================================================
@@ -62,7 +62,7 @@ const CHAT_ORIGIN = "mechanics-and-society";
 // They are not server-enforced permissions.
 
 // Show the button for starting a new conversation.
-const allowNewChat = true;
+const allowNewChat = false;
 
 // Show message-delete controls.
 //
@@ -78,22 +78,22 @@ const allowDelete = true;
 //
 // In PocketBase mode, importing creates a new conversation
 // and saves it immediately rather than replacing the current one.
-const allowImport = true;
+const allowImport = false;
 
 // Show the JSON conversation-download button.
-const allowExport = true;
+const allowExport = false;
 
 // Show file/image attachment controls.
-const allowAttachments = true;
+const allowAttachments = false;
 
 // Show the drawing tool independently of file uploads.
-const allowDrawing = true;
+const allowDrawing = false;
 
 // Show the older-conversation browser.
 //
 // Only applicable when PocketBase is configured.
 // Hiding it does not disable restoring the latest conversation.
-const showConversationBrowser = true;
+const showConversationBrowser = false;
 
 
 // ============================================================
@@ -114,52 +114,21 @@ const copyPasteProtection = false;
 // so it does not tell pupils to use buttons that are hidden.
 
 const FIRST_MESSAGE = `
-Welcome to the AI tutor Maya for physics. Her goal is to guide you through a discussion about the impacts of science on society.
 
-Before starting this discussion, remember to:
+Ahoj! 👋
 
-${POCKETBASE_URL.trim()
-  ? "* **Log in** using the username and password provided by your teacher."
-  : "* **Enter the key** that you received from your teacher using the 🔑 button."}
+Ešte než začneš používať našich tútorov, tu si overíš, že sa tvoje konverzácie správne ukladajú.
 
-* Choose **one topic** that interests you most from the options Maya provides.
-* You can start the discussion by typing *"Hi!"* or *"Hello!"*.
+Postup je jednoduchý:
 
-${allowExport
-  ? `### Saving a copy
+1. **Popíš si** so mnou chvíľu niečo (napr. mi napíš, ako sa máš alebo čo študuješ, nemusí to byť nič osobné).
+2. **Odhlás sa a zavri** prehliadač alebo tab.
+3. **Prihlás sa** znova.
+4. **Skontroluj,** či vidíš túto aj predošlú konverzáciu.
+5. Môžeš otestovať prihlásenie aj na iných zariadeniach, ak na nich budeš pracovať (napr. tablet)
 
-* **Save the conversation** using 💾 to download a JSON file.
-* If your teacher asks you to submit it, **rename the file** using your name and surname, for example *lincoln_abraham.json*.
+Ak sa ti niečo nesynchronizovalo, t.j. nevidíš svoje a moje správy po opätovnom prihlásení, kontaktuj správcu na [dominik.borovsky@student.upjs.sk](mailto:dominik.borovsky@student.upjs.sk)
 `
-  : ""}
-
-${allowImport
-  ? `### Importing a conversation
-
-Use 📂 to upload a previously downloaded conversation JSON file.
-${POCKETBASE_URL.trim()
-  ? "The imported history will be saved as a new conversation."
-  : ""}
-`
-  : ""}
-
-${POCKETBASE_URL.trim()
-  ? `### Automatic saving
-
-Your conversation is saved to your account after each completed AI response. Wait for the response and save confirmation before closing the page.
-
-When you return and log in, your latest conversation for this activity will be restored.
-
-${showConversationBrowser
-  ? "You can also use the conversation browser to open an older conversation for this activity."
-  : ""}
-`
-  : `**WARNING:** This page does not save your conversation to a database. Closing or reloading the page may lose your conversation.${
-      allowExport
-        ? " Download a copy before leaving."
-        : " The conversation-download option is disabled for this activity."
-    }`}
-`.trim();
 
 
 // ============================================================
@@ -167,15 +136,33 @@ ${showConversationBrowser
 // ============================================================
 
 const CONTENT_USER = `
-## Interactive quizzes
+Si testovací AI tútor pre študentov predmetu Digitálna gramotnosť študenta (DGS) na UPJŠ. Tvojou jedinou úlohou je pomôcť študentovi overiť, že mu správne funguje prihlásenie a ukladanie konverzácií, kým začne pracovať s ostatnými AI agentmi.
 
-Introduce yourself as Maya, a general AI tutor for physics. Offer students help with anything, ask them for the desired topic or theme. At the begining of the conversation mention that you are able to also provide quizzes if they want to try.
+Pravidlá správania:
 
-If you are about to include some formulas, use LaTeX, such as $K_E = \frac{1}{2}mv^2$
+1. Študenta prijmi priateľsky a stručne mu pripomeň, na čo slúži tento test: popísať si s tebou o niečom, odhlásiť sa, zavrieť prehliadač alebo tab, znova sa prihlásiť a skontrolovať, či vidí predošlé správy, prípadne to odskúšať aj na iných zariadeniach.
 
-When a short knowledge check would genuinely help the student,
-return it in a fenced code block that starts with \`\`\`quiz and
-contains valid JSON with this shape:
+2. Veď študenta krok za krokom touto sekvenciou a po každom kroku sa pýtaj, či sa mu podaril:
+   a) napíš so študentom krátky neformálny rozhovor (napr. o tom, ako sa má, čo študuje),
+   b) po zopár replikách požiadaj študenta, aby sa odhlásil/-a a zavrel/-a prehliadač alebo tab, a požiadaj ho, aby sa znova prihlásil/-a,
+   d) ak sa vráti opýtaj sa, či vidí túto aj predošlú konverzáciu.
+
+3. Ak študent potvrdí, že správy vidí, gratuluj mu a daj mu vedieť, že všetko funguje a že to je na zatiaľ všetko a že vďaka tomu je aktivita zaznamenaná a vyučujúci predmetu budú mať prehlaď o jeho/jej progrese.
+
+4. Ak študent hlási, že správy nie sú uložené alebo sa nesynchronizujú medzi zariadeniami, poraď mu:
+   - skontrolovať, či sa prihlásil tou istou gmailovou adresou, ktorú používa v Google Triede,
+   - obnoviť stránku alebo sa prihlásiť znova,
+   - ak problém pretrváva, kontaktovať správcu tútorov na dominik.borovsky@student.upjs.sk
+
+5. Ak ťa študent pýta na obsah predmetu, zadania alebo látku, zdvorilo mu vysvetli, že to nie je tvoja rola – si len testovací agent na overenie funkčnosti a že to je úloha 
+
+6. Nežiadaj ani neukladaj žiadne osobné údaje okrem toho, čo študent sám napíše do konverzácie. Nepoužívaj kontrolné otázky typu "povedz mi svoje heslo" – heslá sa nikdy neptaj.
+
+7. Píš v slovenčine, priateľským a povzbudivým tónom, krátko a jasne. Volaj študenta tykaním.
+
+8. Tvoje odpovede sú stručné – zvyčajne 1 až 4 vety, pokiaľ študent explicitne nežiada o viac detailov.
+
+9. Ponúkni študentovi vytvorenie práve jedného krátkeho kvízu (max. 5 otázok), ktorým si môže otestovať nejaké základné termíny z digitálnej gramotnosti. Na konci kvízu študent môže svoje odpovede poslať do chatu pomocou možnosti "Submit". Tu je template, ako by si mal generovať kvíz, aby sa správne vyrenderoval.
 
 \`\`\`quiz
 {"title": "Quiz title", "questions": [{"question": "...", "options": ["..."], "answer": 0, "explanation": "..."}]}
