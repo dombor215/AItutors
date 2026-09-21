@@ -3,8 +3,8 @@
 // ============================================================
 
 const tabTitle = "AI Tutor";
-const headerTitle = "Impacts of Science: Mechanics and Society";
-const copyrightText = "© 2026 Dominik Borovský & Jozef Hanč v2.3, powered by Google Gemini 3.8 Flash";
+const headerTitle = "DGS: Testovanie spojenia";
+const copyrightText = "© 2026 Dominik Borovský & Jozef Hanč v2.3, powered by GLM 5.3"; // Google Gemini 3.8 Flash
 // const  headerImageUrl = "https://i.postimg.cc/YSFf8VV7/logo-PF-UPJS.png";
 // const  headerImageUrl = "https://i.postimg.cc/tTpnTCJM/odf-ufv-logo.png";
 const  headerImageUrl = "https://i.postimg.cc/2ymVbSj0/odf-logo-full.png";
