@@ -27,7 +27,7 @@
   let awaitingReply = false;
   let attachmentJobs = 0;
   let pendingQuizSummary = null;
-  let localNumber = -1;
+  let localNumber = 0;
   let historyPage = 1;
   let historyPages = 1;
 
@@ -36,10 +36,8 @@
   let threadEl;
   let newChatBtn;
   let loginBtn;
-  let logoutBtn;
   let retrySaveBtn;
   let historySelect;
-  let openHistoryBtn;
   let olderHistoryBtn;
   let loginDialog;
   let loginForm;
@@ -63,7 +61,7 @@
   }
 
   function numberLabel(number) {
-    return String(number).padStart(CHAT_NUMBER_PADDING, "0");
+    return String(number);
   }
 
   function setStatus(text) {
@@ -381,20 +379,21 @@
       .join("\n");
   }
 
+  function formatConversationDate(value) {
+    const date = new Date(value);
+
+    if (Number.isNaN(date.getTime())) {
+      return "Unknown date";
+    }
+
+    return new Intl.DateTimeFormat(undefined, {
+      dateStyle: "medium",
+      timeStyle: "short"
+    }).format(date);
+  }
+
   function conversationTitle(document) {
-    const first = document.messages.find(
-      message => message.role === "user" && !message.deleted
-    );
-
-    if (!first) return "New conversation";
-
-    const text =
-      typeof first.displayText === "string"
-        ? first.displayText
-        : textFromMessage(first);
-
-    return text.trim().replace(/\s+/g, " ").slice(0, 120) ||
-      "Conversation with attachment";
+    return formatConversationDate(document.sessionStartTime);
   }
 
   function installConversation(document, record) {
@@ -579,7 +578,7 @@
 
       const number = highest.items.length
         ? Number(highest.items[0].number) + 1
-        : 0;
+        : 1;
 
       const payload = {
         id,
@@ -695,6 +694,28 @@
   // Conversation browser
   // ==========================================================
 
+  async function openSelectedHistory() {
+    const id = historySelect.value;
+    const previousId = currentRecord?.id || "";
+
+    if (!id || !showConversationBrowser || id === previousId) {
+      return;
+    }
+
+    if (!await mayLeaveConversation()) {
+      historySelect.value = previousId;
+      return;
+    }
+
+    try {
+      await loadRecord(id);
+    } catch (error) {
+      // Keep the selector aligned with the conversation that is still open.
+      historySelect.value = previousId;
+      throw error;
+    }
+  }
+
   async function refreshHistory(append = false) {
     if (!DATABASE_MODE || !showConversationBrowser || !auth) return;
 
@@ -725,7 +746,8 @@
       const option = document.createElement("option");
       option.value = record.id;
       option.textContent =
-        `${numberLabel(record.number)} — ${record.title || "Conversation"}`;
+        `${numberLabel(record.number)} — ` +
+        formatConversationDate(record.created || record.updated);
 
       historySelect.appendChild(option);
     }
@@ -1638,10 +1660,7 @@
 
     loginBtn.hidden = !DATABASE_MODE;
     loginBtn.disabled = busy;
-    loginBtn.textContent = auth ? "Log in again" : "Log in";
-
-    logoutBtn.hidden = !DATABASE_MODE || !auth;
-    logoutBtn.disabled = busy;
+    loginBtn.textContent = auth ? "Log out" : "Log in";
 
     retrySaveBtn.hidden = !DATABASE_MODE || !dirty;
     retrySaveBtn.disabled = locked;
@@ -1649,11 +1668,9 @@
     const browse = DATABASE_MODE && showConversationBrowser;
 
     historySelect.hidden = !browse;
-    openHistoryBtn.hidden = !browse;
     olderHistoryBtn.hidden = !browse || historyPage >= historyPages;
 
     historySelect.disabled = locked;
-    openHistoryBtn.disabled = locked || !historySelect.value;
     olderHistoryBtn.disabled = locked;
 
     loginForm.querySelector('button[type="submit"]').disabled = busy;
@@ -1774,7 +1791,7 @@
       #tutorLogin::backdrop,
       #tutorPasswordReset::backdrop,
       #tutorPasswordConfirm::backdrop {
-        background: rgba(0, 0, 0, .55);
+        background: rgba(0, 0, 0, .28);
       }
 
       #tutorLogin form,
@@ -1824,17 +1841,12 @@
 
     historySelect = document.createElement("select");
     historySelect.setAttribute("aria-label", "Saved conversations");
-    historySelect.addEventListener("change", updateUI);
-    tools.appendChild(historySelect);
-
-    openHistoryBtn = createButton("Open", () => {
-      run(async () => {
-        const id = historySelect.value;
-        if (!id || !showConversationBrowser) return;
-        if (!await mayLeaveConversation()) return;
-        await loadRecord(id);
-      });
+    historySelect.addEventListener("change", () => {
+      if (historySelect.value) {
+        run(openSelectedHistory);
+      }
     });
+    tools.appendChild(historySelect);
 
     olderHistoryBtn = createButton("Load older", () => {
       run(async () => {
@@ -1849,8 +1861,13 @@
       });
     });
 
-    loginBtn = createButton("Log in", () => loginDialog.showModal());
-    logoutBtn = createButton("Log out", () => run(logout));
+    loginBtn = createButton("Log in", () => {
+      if (auth) {
+        run(logout);
+      } else {
+        loginDialog.showModal();
+      }
+    });
     retrySaveBtn = createButton("Retry save", () => run(saveCurrent));
 
     statusEl = document.createElement("div");
@@ -1883,7 +1900,7 @@
         </label>
 
         <button type="submit">Log in</button>
-        <button type="button" data-forgot>Forgot password?</button>
+        <button type="button" data-forgot>Reset password</button>
         <button type="button" data-close>Cancel</button>
       </form>
     `;
