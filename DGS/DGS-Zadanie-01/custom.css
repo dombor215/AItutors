@@ -1,0 +1,22 @@
+:root {
+    --primary-color: #008339a6;
+    --secondary-color: #113983de;
+    --user-bg: #d1e7dd;
+    --bot-bg: #ffffff;
+    --background: #f5f7fa;
+}
+
+header {
+    background: linear-gradient(3deg, var(--primary-color), var(--secondary-color));
+    color: white;
+}
+
+#headerImage {
+    position: absolute;
+    right: calc(16px + var(--safe-right));
+    top: 50%;
+    transform: translateY(-50%);
+    height: 70%;
+    width: auto;
+    z-index: 0;
+}
