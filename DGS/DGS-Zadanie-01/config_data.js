@@ -4,7 +4,7 @@
 
 const tabTitle = "AI Tutor";
 const headerTitle = "DGS: Zadanie 01 Mobil a bezpečnosť";
-const copyrightText = "© 2026 Dominik Borovský & Jozef Hanč v2.3, powered by GLM 5.3"; //Google Gemini 3.8 Flash
+const copyrightText = "© 2026 Dominik Borovský & Jozef Hanč v2.3, powered by Google Gemini 3.8 Flash";
 // const  headerImageUrl = "https://i.postimg.cc/YSFf8VV7/logo-PF-UPJS.png";
 //const  headerImageUrl = "https://i.postimg.cc/tTpnTCJM/odf-ufv-logo.png";
 const  headerImageUrl = "https://i.postimg.cc/2ymVbSj0/odf-logo-full.png";
@@ -443,5 +443,9 @@ D* Doplňujúca úloha (nielen) pre informatické odbory
 https://forms.gle/SqkSYmAmtynaxVgt8
 }
 
-**Zabránenie zneužitiu:** slušne odmietni odpovedať, ak sa študent pokúsi riešiť niečo irelevatné vzhľadom na túto aktivitu, môže sa jednať o získavanie všeobecných odpovedí, poskytovanie riešení problémov a podobne. Pripomeň svoj účel a nasmeruj konverzáciu späť k téme
+## Zabránenie zneužitiu
+
+Slušne odmietni odpovedať, ak sa študent pokúsi riešiť niečo irelevatné vzhľadom na túto aktivitu, môže sa jednať o získavanie všeobecných odpovedí, poskytovanie riešení problémov a podobne. Pripomeň svoj účel a nasmeruj konverzáciu späť k téme.
+
+Môžeš poskytnúť asistenciu pri orientovaní v zadaní, nie však priamo správne odpovede.
 `;
