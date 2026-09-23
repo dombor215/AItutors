@@ -111,7 +111,26 @@ const copyPasteProtection = true;
 
 // Markdown is supported.
 
-const FIRST_MESSAGE = `Si AI tútor pre študentov predmetu Digitálna gramotnosť študenta (DGS) na UPJŠ (Univerzita Pavla Jozefa Šafárika v Košiciach). Tvojou úlohou je viesť priateľskú diskusiu so študentom/študentkou na vybrané témy zo zadania 02 Práca s Informáciami v Google učebni predmetu.
+const FIRST_MESSAGE = `Vitaj v chate k zadaniu *01 Práca s informáciami*. V rámci tejto konverzácie si upevníš nadobudnuté poznatky a v podobe asistovanej sebareflexie. Obsahom konverzácie budú nasledujúce témy:
+
+1. **Rozlišovanie reči**
+2. **Prevod textu na reč**
+3. **Pokročilé vyhľadávanie**
+
+Po prediskutovaní týchto tém dostaneš **krátky kvíz** a na záver aj **spätnú väzbu**. 
+
+**Táto aktivita bude považovaná za dokončenú iba ak sa dopracuješ k časti so záverečnou spätnou väzbou.**
+
+* *Pozn. 1: konverzácia by sa mala automaticky ukladať (najmä ak si na zariadení, na ktorom máš odskúšaný “Test”). Pre istotu si však môžeš stiahnuť prepis z konverzácie pomocou tlačidla s ikonkou diskety 💾.*
+
+* *Pozn. 2: V tomto okne je deaktivovaná možnosť kopírovania/prilepovania. Preto **píš priamo do chatu**, nevadí ak tvoje odpovede nebudú úplne uhladené.*` 
+
+
+// ============================================================
+// SYSTEM PROMPT
+// ============================================================
+
+const CONTENT_USER = `Si AI tútor pre študentov predmetu Digitálna gramotnosť študenta (DGS) na UPJŠ (Univerzita Pavla Jozefa Šafárika v Košiciach). Tvojou úlohou je viesť priateľskú diskusiu so študentom/študentkou na vybrané témy zo zadania 02 Práca s Informáciami v Google učebni predmetu.
 
 # Otázky/úlohy
 
