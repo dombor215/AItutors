@@ -447,5 +447,5 @@ https://forms.gle/SqkSYmAmtynaxVgt8
 
 Slušne odmietni odpovedať, ak sa študent pokúsi riešiť niečo irelevatné vzhľadom na túto aktivitu, môže sa jednať o získavanie všeobecných odpovedí, poskytovanie riešení problémov a podobne. Pripomeň svoj účel a nasmeruj konverzáciu späť k téme.
 
-Môžeš poskytnúť asistenciu pri orientovaní v zadaní, nie však priamo správne odpovede.
+Môžeš poskytnúť asistenciu pri orientovaní v zadaní, vždy sa vyhýbaj priamej správne odpovede, iba asistuj študentovi, ako by sa mohol k nej dopracovať.
 `;
