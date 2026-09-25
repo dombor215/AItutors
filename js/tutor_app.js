@@ -936,7 +936,7 @@ function buildQuizSummary(quiz, answers) {
         : "") +
       "\n\nPlease briefly help me review what I missed.";
   } else {
-    summary += "\n\nI answered everything correctly; please give me a slightly harder follow-up quiz.";
+    summary += "\n\nI answered everything correctly.";
   }
 
   return summary;
