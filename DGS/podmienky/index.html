@@ -1,0 +1,108 @@
+<!DOCTYPE html><html lang="en"><head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+<title>AI Tutor</title>
+<link rel="icon" type="image/svg+xml" href="data:image/svg+xml,
+%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'%3E
+%3Crect width='100' height='100' rx='20' fill='%230256d1'/%3E
+%3Cpath d='M20 60 Q50 40 80 60 L80 75 Q50 55 20 75 Z' fill='white'/%3E
+%3Cpolygon points='50,20 85,35 50,50 15,35' fill='white'/%3E
+%3Crect x='47' y='35' width='6' height='25' fill='white'/%3E
+%3Ccircle cx='50' cy='65' r='4' fill='%230256d1'/%3E
+%3C/svg%3E">
+
+<!-- JSZip for Office/ODF extraction -->
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
+<!-- PDF.js for PDF extraction -->
+<script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js"></script>
+
+
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/dombor215/AItutors@main/css/tutor_styles.css">
+<link rel="stylesheet" href="custom.css">
+
+<script>
+  window.MathJax = {
+    tex: {
+      inlineMath: [['\\(', '\\)']],
+      displayMath: [['\\[', '\\]']],
+      processEscapes: true,
+      processEnvironments: true
+    },
+    options: {
+      skipHtmlTags: ['script', 'noscript', 'style', 'textarea', 'pre', 'code']
+    }
+  };
+</script>
+<script defer="" src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-chtml.js"></script>
+</head>
+
+<body>
+<header id="pageHeader">
+  <img id="headerImage" alt="">
+  <span id="headerTitle"></span>
+  <div class="copyright"></div>
+</header>
+
+<div id="chat"></div>
+
+<div id="inputArea">
+  <div id="attachmentArea"></div>
+  <div id="inputRow">
+    <textarea id="messageInput" placeholder="Type a message..." rows="1"></textarea>
+    <div class="button-group">
+      <button id="sendBtn" title="Send message" onclick="sendMessage()">➤</button>
+      <button id="attachBtn" title="Attach files" onclick="document.getElementById('fileUpload').click()">📎</button>
+      <button id="drawBtn" title="Handwrite / Draw" onclick="openDrawModal()">✏️</button>
+      <button id="apiBtn" title="Set key" onclick="setApiKey()">🔑</button>
+      <button id="exportBtn" title="Save chat">💾</button>
+      <button id="importBtn" title="Import chat">📂</button>
+    </div>
+  </div>
+  <!-- <div class="upload-hint">Attach images, .docx, .odt, .pptx, .odp, .xlsx, .ods, .pdf — or paste / drag &amp; drop. Check <a href="viewer/json_chat_reader.html" style="color: #4A90E2;">Chat Viewer</a> to upload and review all your chat exports at once.</div> -->
+   <div class="upload-hint"></div>
+</div>
+
+<input type="file" id="fileUpload" multiple="">
+
+<div id="dropOverlay">📁 Drop files here</div>
+
+<div id="imageModal" onclick="this.classList.remove('active')">
+  <img id="modalImage" src="" alt="full size">
+</div>
+
+<!-- Draw / Handwriting Modal -->
+<div id="drawModal">
+  <div id="drawContainer">
+    <div id="drawToolbar">
+      <div class="draw-colors">
+        <button class="draw-color-btn active" style="background:#000" onclick="setDrawColor('#000',this)" title="Black"></button>
+        <button class="draw-color-btn" style="background:#e74c3c" onclick="setDrawColor('#e74c3c',this)" title="Red"></button>
+        <button class="draw-color-btn" style="background:#2980b9" onclick="setDrawColor('#2980b9',this)" title="Blue"></button>
+        <button class="draw-color-btn" style="background:#27ae60" onclick="setDrawColor('#27ae60',this)" title="Green"></button>
+        <button class="draw-tool-btn" id="eraserBtn" onclick="toggleEraser()" title="Eraser">🧹</button>
+      </div>
+      <div class="draw-size">
+        <span>Size:</span>
+        <input type="range" id="penSize" min="1" max="16" value="3">
+      </div>
+      <button class="draw-tool-btn" onclick="clearCanvas()" title="Clear canvas">🗑️</button>
+    </div>
+    <canvas id="drawCanvas"></canvas>
+    <div id="drawFooter">
+      <button class="draw-action-btn cancel-btn" onclick="closeDrawModal()">Cancel</button>
+      <button class="draw-action-btn attach-btn" onclick="attachDrawing()">📎 Attach</button>
+      <button class="draw-action-btn send-btn" onclick="sendDrawing()">➤ Send</button>
+    </div>
+  </div>
+</div>
+
+<div id="toast"></div>
+
+<script src="config_data.js"></script>
+<script src="https://cdn.jsdelivr.net/gh/dombor215/AItutors@main/js/tutor_app.js"></script>
+
+
+<script src="https://cdn.jsdelivr.net/npm/dompurify@3.4.12/dist/purify.min.js"></script>
+<script src="https://cdn.jsdelivr.net/gh/dombor215/AItutors@main/js/tutor_login.js"></script>
+
+</body></html>
