@@ -8,11 +8,6 @@
   const PB_URL = POCKETBASE_URL.trim().replace(/\/+$/, "");
   const DATABASE_MODE = Boolean(PB_URL);
 
-  const SIGNUP_ENABLED =
-    DATABASE_MODE &&
-    typeof signUpAllow !== "undefined" &&
-    signUpAllow === true;
-
   const USERS_PATH =
     "/api/collections/" +
     encodeURIComponent(POCKETBASE_USERS_COLLECTION);
@@ -51,12 +46,6 @@
   let passwordResetForm;
   let passwordConfirmDialog;
   let passwordConfirmForm;
-  let signUpDialog;
-  let signUpForm;
-  let signUpButton;
-  let resendVerificationBtn;
-  let resendVerificationDialog;
-  let resendVerificationForm;
 
   const nowISO = () => new Date().toISOString();
 
@@ -962,128 +951,6 @@
   }
 
   // ==========================================================
-  // Sign up
-  // ==========================================================
-
-  async function requestVerificationEmail(email) {
-    await fetchJSON(
-      PB_URL + USERS_PATH + "/request-verification",
-      {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ email })
-      }
-    );
-  }
-
-  async function submitSignUp(event) {
-    event.preventDefault();
-
-    await run(async () => {
-      if (!SIGNUP_ENABLED || auth) {
-        throw new Error("Account creation is unavailable.");
-      }
-
-      const email = signUpForm.elements.email.value.trim();
-      const password = signUpForm.elements.password.value;
-      const passwordConfirm =
-        signUpForm.elements.passwordConfirm.value;
-
-      if (!email || !password || !passwordConfirm) {
-        throw new Error("Complete all account fields.");
-      }
-
-      if (password !== passwordConfirm) {
-        throw new Error("The passwords do not match.");
-      }
-
-      try {
-        await fetchJSON(PB_URL + USERS_PATH + "/records", {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({
-            email,
-            password,
-            passwordConfirm
-          })
-        });
-      } finally {
-        signUpForm.elements.password.value = "";
-        signUpForm.elements.passwordConfirm.value = "";
-      }
-
-      signUpForm.reset();
-      signUpDialog.close();
-
-      // The account itself exists at this point; a failed
-      // verification request must not imply that signup failed,
-      // or the pupil might create the same account again.
-      let verificationRequested = false;
-
-      try {
-        await requestVerificationEmail(email);
-        verificationRequested = true;
-      } catch (error) {
-        console.error(
-          "Account created, but verification request failed:",
-          error
-        );
-      }
-
-      loginForm.elements.identity.value = email;
-      loginDialog.showModal();
-      loginForm.elements.password.focus();
-
-      const notice = verificationRequested
-        ? "Account created. Check your email for a verification link, "
-          + "then log in."
-        : "Account created, but the verification email could not be "
-          + "requested. Check mail settings or use Resend verification email.";
-
-      setStatus(notice);
-      showToast(notice, 10000);
-    });
-  }
-
-  async function submitResendVerification(event) {
-    event.preventDefault();
-
-    await run(async () => {
-      if (!DATABASE_MODE) {
-        throw new Error(
-          "Email verification is unavailable in standalone mode."
-        );
-      }
-
-      const email =
-        resendVerificationForm.elements.email.value.trim();
-
-      if (!email) {
-        throw new Error("Enter your email address.");
-      }
-
-      await requestVerificationEmail(email);
-
-      resendVerificationForm.reset();
-      resendVerificationDialog.close();
-
-      // Keep this deliberately generic to avoid revealing whether
-      // an account exists or is already verified.
-      showToast(
-        "If an account needs verification, a new verification link has " +
-        "been sent. Check your inbox and spam folder.",
-        10000
-      );
-
-      setStatus("Check your email for a verification link.");
-
-      if (!auth && !loginDialog.open) {
-        loginDialog.showModal();
-      }
-    });
-  }
-
-  // ==========================================================
   // Login/logout
   // ==========================================================
 
@@ -1808,20 +1675,6 @@
 
     loginForm.querySelector('button[type="submit"]').disabled = busy;
 
-    if (signUpButton) {
-      signUpButton.disabled = busy;
-    }
-
-    if (resendVerificationBtn) {
-      resendVerificationBtn.disabled = busy;
-    }
-
-    if (signUpForm) {
-      signUpForm.querySelectorAll("button, input").forEach(element => {
-        element.disabled = busy;
-      });
-    }
-
     if (passwordResetForm) {
       passwordResetForm
         .querySelectorAll("button, input")
@@ -1887,8 +1740,6 @@
 
       #tutorTools button,
       #tutorLogin button,
-      #tutorSignUp button,
-      #tutorResendVerification button,
       #tutorPasswordReset button,
       #tutorPasswordConfirm button,
       .tutor-delete {
@@ -1929,8 +1780,6 @@
       }
 
       #tutorLogin,
-      #tutorSignUp,
-      #tutorResendVerification,
       #tutorPasswordReset,
       #tutorPasswordConfirm {
         width: min(92vw, 380px);
@@ -1940,16 +1789,12 @@
       }
 
       #tutorLogin::backdrop,
-      #tutorSignUp::backdrop,
-      #tutorResendVerification::backdrop,
       #tutorPasswordReset::backdrop,
       #tutorPasswordConfirm::backdrop {
         background: rgba(0, 0, 0, .28);
       }
 
       #tutorLogin form,
-      #tutorSignUp form,
-      #tutorResendVerification form,
       #tutorPasswordReset form,
       #tutorPasswordConfirm form {
         display: grid;
@@ -1957,8 +1802,6 @@
       }
 
       #tutorLogin label,
-      #tutorSignUp label,
-      #tutorResendVerification label,
       #tutorPasswordReset label,
       #tutorPasswordConfirm label {
         display: grid;
@@ -1966,8 +1809,6 @@
       }
 
       #tutorLogin input,
-      #tutorSignUp input,
-      #tutorResendVerification input,
       #tutorPasswordReset input,
       #tutorPasswordConfirm input {
         box-sizing: border-box;
@@ -2092,178 +1933,6 @@
 
         passwordResetForm.elements.email.focus();
       });
-
-    // ----------------------------------------------------------
-    // Sign up dialog (only when self-registration is enabled)
-    // ----------------------------------------------------------
-
-    if (SIGNUP_ENABLED) {
-      signUpButton = document.createElement("button");
-      signUpButton.type = "button";
-      signUpButton.textContent = "Create account";
-
-      loginDialog.querySelector("[data-forgot]").before(signUpButton);
-
-      signUpDialog = document.createElement("dialog");
-      signUpDialog.id = "tutorSignUp";
-
-      signUpDialog.innerHTML = `
-        <form>
-          <strong>Create account</strong>
-
-          <p>
-            After creating the account, you will receive a
-            verification link by email. You must open that link
-            to verify your address before logging in. If the
-            email does not arrive, check your spam folder.
-          </p>
-
-          <label>
-            Email address
-            <input
-              name="email"
-              type="email"
-              autocomplete="email"
-              required
-            >
-          </label>
-
-          <label>
-            Password
-            <input
-              name="password"
-              type="password"
-              autocomplete="new-password"
-              required
-            >
-          </label>
-
-          <label>
-            Confirm password
-            <input
-              name="passwordConfirm"
-              type="password"
-              autocomplete="new-password"
-              required
-            >
-          </label>
-
-          <button type="submit">Create account</button>
-          <button type="button" data-cancel>Back to login</button>
-        </form>
-      `;
-
-      document.body.appendChild(signUpDialog);
-
-      signUpForm = signUpDialog.querySelector("form");
-      signUpForm.addEventListener("submit", submitSignUp);
-
-      signUpButton.addEventListener("click", () => {
-        const identity = loginForm.elements.identity.value.trim();
-
-        if (identity.includes("@")) {
-          signUpForm.elements.email.value = identity;
-        }
-
-        loginDialog.close();
-        signUpDialog.showModal();
-        signUpForm.elements.email.focus();
-      });
-
-      signUpDialog.querySelector("[data-cancel]")
-        .addEventListener("click", () => {
-          signUpForm.reset();
-          signUpDialog.close();
-          loginDialog.showModal();
-        });
-
-      signUpDialog.addEventListener("close", () => {
-        signUpForm.elements.password.value = "";
-        signUpForm.elements.passwordConfirm.value = "";
-      });
-    }
-
-    // ----------------------------------------------------------
-    // Resend verification email dialog (also for accounts created
-    // while signup was enabled, even if signup is now disabled)
-    // ----------------------------------------------------------
-
-    if (DATABASE_MODE) {
-      resendVerificationBtn = document.createElement("button");
-      resendVerificationBtn.type = "button";
-      resendVerificationBtn.textContent =
-        "Resend verification email";
-
-      if (signUpButton) {
-        signUpButton.after(resendVerificationBtn);
-      } else {
-        loginDialog.querySelector("[data-forgot]")
-          .before(resendVerificationBtn);
-      }
-
-      resendVerificationBtn.addEventListener("click", () => {
-        const identity =
-          loginForm.elements.identity.value.trim();
-
-        // If the login identity already looks like an email address,
-        // copy it into the resend form.
-        if (identity.includes("@")) {
-          resendVerificationForm.elements.email.value = identity;
-        }
-
-        loginDialog.close();
-        resendVerificationDialog.showModal();
-
-        resendVerificationForm.elements.email.focus();
-      });
-
-      resendVerificationDialog = document.createElement("dialog");
-      resendVerificationDialog.id = "tutorResendVerification";
-
-      resendVerificationDialog.innerHTML = `
-        <form>
-          <strong>Resend verification email</strong>
-
-          <p>
-            Enter the email address of your account.
-            We will send you a new verification link.
-          </p>
-
-          <label>
-            Email address
-            <input
-              name="email"
-              type="email"
-              autocomplete="email"
-              required
-            >
-          </label>
-
-          <button type="submit">Send verification link</button>
-          <button type="button" data-close>Cancel</button>
-        </form>
-      `;
-
-      document.body.appendChild(resendVerificationDialog);
-
-      resendVerificationForm =
-        resendVerificationDialog.querySelector("form");
-
-      resendVerificationForm.addEventListener(
-        "submit",
-        submitResendVerification
-      );
-
-      resendVerificationDialog
-        .querySelector("[data-close]")
-        .addEventListener("click", () => {
-          resendVerificationDialog.close();
-
-          if (!auth && !loginDialog.open) {
-            loginDialog.showModal();
-          }
-        });
-    }
 
     // ----------------------------------------------------------
     // Request password reset dialog
