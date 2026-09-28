@@ -54,6 +54,9 @@ const POCKETBASE_CONVERSATIONS_COLLECTION = "dgs_conversations";
 // Keep this unchanged when you only change the page title.
 const CHAT_ORIGIN = "dgs2026-zadanie04";
 
+// Allow sign up by the users themselves
+const signUpAllow = true;
+
 // ============================================================
 // FEATURE VISIBILITY
 // ============================================================

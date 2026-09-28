@@ -55,6 +55,9 @@ const POCKETBASE_CONVERSATIONS_COLLECTION = "dgs_conversations";
 const CHAT_ORIGIN = "dgs2026-zadanie01";
 
 
+// Allow sign up by the users themselves
+const signUpAllow = true;
+
 // ============================================================
 // FEATURE VISIBILITY
 // ============================================================
