@@ -245,10 +245,7 @@
       exportTime: nowISO(),
       awaitingReply,
       pendingQuizSummary,
-      messages: messages.map(message => {
-        const { wasPasted, ...rest } = message;
-        return rest;
-      })
+      messages: messages.map(({ token, wasPasted, ...rest }) => rest)
     };
   }
 
@@ -1484,12 +1481,8 @@
         const timestamp = nowISO();
         const content = buildUserContent(text, attachments);
 
-        const token = await generatePasteToken(
-          timestamp,
-          content,
-          pastedInCurrentInput
-        );
-
+        // Plain observation flag, not an integrity token: records that
+        // a text paste occurred while this message was composed.
         messages.push({
           id: makeId(),
           role: "user",
@@ -1500,8 +1493,7 @@
             isImage: file.isImage
           })),
           timestamp,
-          token,
-          wasPasted: pastedInCurrentInput
+          pasted: pastedInCurrentInput
         });
 
         awaitingReply = true;
