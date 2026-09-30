@@ -1958,7 +1958,7 @@
       #tutorResendVerification::backdrop,
       #tutorPasswordReset::backdrop,
       #tutorPasswordConfirm::backdrop {
-        background: rgba(0, 0, 0, .28);
+        background: rgba(0, 0, 0, 0.03);
       }
 
       #tutorLogin form,
@@ -2123,16 +2123,7 @@
 
       signUpDialog.innerHTML = `
         <form>
-          <strong>Create account</strong>
-
-          <p>
-            After creating the account, you will receive a
-            verification link by email. You must open that link
-            to verify your address before logging in. You may need to check your spam folder.
-            <br><br>
-            <i>Your name and email are used only to identify your account.
-            They are never published or shared, and they will be deleted after the end of course or on request.</i>            
-          </p>
+          <strong style="font-size:1.2em;">Create account</strong>
 
           <label>
             Full name or User name
@@ -2178,6 +2169,28 @@
 
           <button type="submit">Create account</button>
           <button type="button" data-cancel>Back to login</button>
+
+          <p>
+            Shortly after creating your account, you will receive a
+            verification link by email. 
+            
+            <br><br>
+
+            <strong style="color:#c0392b; font-size:1em;">⚠️ IMPORTANT: You MUST open that link and verify your address before logging in for the first time.</strong>
+            <br><br>
+            <strong>Without verification, you will not be able to log in.</strong>
+            <br><br>
+            
+            If you cannot find the email, please check your spam folder or contact the admin.
+            
+            <br><br>
+            <strong>Please use the same email address for the entire course.</strong> <strong>Do not create multiple accounts - all your activity and results are tied to this address.</strong>
+            <br><br>
+            <i style="font-size: 0.8rem; line-height: 1.4; color: #6b7280;">
+              By signing up, you voluntarily provide your name and email solely for account identification purposes. They are never published or shared, and will be deleted after the course ends or upon request.
+            </i>
+          </p>
+
         </form>
       `;
 
