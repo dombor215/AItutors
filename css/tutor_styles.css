@@ -596,12 +596,12 @@
     border-radius: 10px;
     font-size: 14px;
     display: none;
-    z-index: 1001;
+    z-index: 2000;
     max-width: 90%;
     text-align: center;
     box-shadow: 0 4px 16px rgba(0,0,0,0.25);
   }
-  #toast.show { display: block; animation: toastFadeIn 0.25s ease-in; }
+  #toast.show { display: block; animation: toastFadeIn 0.25s ease-in; z-index: 22000;}
 
   @keyframes toastFadeIn {
     from { opacity: 0; transform: translateY(10px) translateX(-50%); }
@@ -971,4 +971,13 @@ button:focus-visible {
 /* Quiz submit already darkens its background on hover, so skip the brightness change */
 .quiz-submit-results:hover:not(:disabled) {
   filter: none;
+}
+
+dialog {
+  box-sizing: border-box;
+  width: min(560px, 90vw);  /* bigger, but never wider than the screen */
+  max-height: 70vh;         /* don't overflow small screens */
+  min-height: min(92vw, 400px);
+  overflow: auto;           /* scroll inside if content is long */
+  padding: 24px;            /* stays inside the width now */
 }

@@ -991,10 +991,9 @@
         throw new Error("Complete all account fields.");
       }
 
-      if (!/^[A-Za-z][A-Za-z .,'-]{1,49}$/.test(username)) {
+      if (!/^\S(?:.*\S)?$/.test(username.trim())) {
         throw new Error(
-          "Name must be 2-50 characters, starting with a letter " +
-          "(letters, numbers, spaces, apostrophes, hyphens, periods)."
+          "Name must be 2-50 characters, with no leading or trailing spaces."
         );
       }
 
@@ -1671,6 +1670,7 @@
     showToast("✓ Conversation imported.");
   }
 
+  
   // ==========================================================
   // Feature guards for existing upload and drawing functions
   // ==========================================================
@@ -1886,6 +1886,9 @@
     style.textContent = `
       [hidden] {
         display: none !important;
+      }
+      #toast {
+        z-index: 2000; /* anything above the modal */
       }
 
       #tutorTools {
@@ -2132,7 +2135,6 @@
               autocomplete="name"
               required
               maxlength="50"
-              pattern="[A-Za-z][A-Za-z .,'-]{1,49}"
               title="2-50 characters, starting with a letter. Spaces, apostrophes, hyphens, and periods are allowed."
             >
           </label>
@@ -2171,23 +2173,16 @@
           <button type="button" data-cancel>Back to login</button>
 
           <p>
-            Shortly after creating your account, you will receive a
-            verification link by email. 
-            
+            Shortly after signing up, you'll receive a verification link by email.
             <br><br>
-
-            <strong style="color:#c0392b; font-size:1em;">⚠️ IMPORTANT: You MUST open that link and verify your address before logging in for the first time.</strong>
+            <strong style="color:#c0392b; font-size:1em;">⚠️ IMPORTANT: You must open that link and verify your address before your first login.</strong>
             <br><br>
-            <strong>Without verification, you will not be able to log in.</strong>
+            If you don't see the email, check your spam folder or contact the admin.
             <br><br>
-            
-            If you cannot find the email, please check your spam folder or contact the admin.
-            
-            <br><br>
-            <strong>Please use the same email address for the entire course.</strong> <strong>Do not create multiple accounts - all your activity and results are tied to this address.</strong>
+            <strong>Please use the same email address for the entire course.</strong> All your activity and results are tied to it, so don't create multiple accounts.
             <br><br>
             <i style="font-size: 0.8rem; line-height: 1.4; color: #6b7280;">
-              By signing up, you voluntarily provide your name and email solely for account identification purposes. They are never published or shared, and will be deleted after the course ends or upon request.
+              Your name and email are used only for account identification. They're never published or shared, and are deleted after the course ends or upon request.
             </i>
           </p>
 
