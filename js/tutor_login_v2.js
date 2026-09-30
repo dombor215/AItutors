@@ -981,21 +981,13 @@
         throw new Error("Account creation is unavailable.");
       }
 
-      const username = signUpForm.elements.username.value.trim();
       const email = signUpForm.elements.email.value.trim();
       const password = signUpForm.elements.password.value;
       const passwordConfirm =
         signUpForm.elements.passwordConfirm.value;
 
-      if (!username || !email || !password || !passwordConfirm) {
+      if (!email || !password || !passwordConfirm) {
         throw new Error("Complete all account fields.");
-      }
-
-      if (!/^[A-Za-z][A-Za-z .,'-]{1,49}$/.test(username)) {
-        throw new Error(
-          "Name must be 2-50 characters, starting with a letter " +
-          "(letters, numbers, spaces, apostrophes, hyphens, periods)."
-        );
       }
 
       if (password !== passwordConfirm) {
@@ -1007,25 +999,11 @@
           method: "POST",
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify({
-            username,
             email,
             password,
             passwordConfirm
           })
         });
-      } catch (error) {
-        // Surface PocketBase's field-level errors (e.g. duplicate username).
-        if (error.status === 400 && error.details) {
-          const fieldError =
-            error.details.username?.message ||
-            error.details.email?.message;
-
-          if (fieldError) {
-            throw new Error(fieldError);
-          }
-        }
-
-        throw error;
       } finally {
         signUpForm.elements.password.value = "";
         signUpForm.elements.passwordConfirm.value = "";
@@ -2058,7 +2036,7 @@
         <strong>Login</strong>
 
         <label>
-          Email address
+          Mail or username
           <input name="identity" autocomplete="username" required>
         </label>
 
@@ -2128,23 +2106,9 @@
           <p>
             After creating the account, you will receive a
             verification link by email. You must open that link
-            to verify your address before logging in. You may need to check your spam folder.
-            <br><br>
-            <i>Your name and email are used only to identify your account.
-            They are never published or shared, and they will be deleted after the end of course or on request.</i>            
+            to verify your address before logging in. If the
+            email does not arrive, check your spam folder.
           </p>
-
-          <label>
-            Full name or User name
-            <input
-              name="username"
-              autocomplete="name"
-              required
-              maxlength="50"
-              pattern="[A-Za-z][A-Za-z .,'-]{1,49}"
-              title="2-50 characters, starting with a letter. Spaces, apostrophes, hyphens, and periods are allowed."
-            >
-          </label>
 
           <label>
             Email address
@@ -2195,7 +2159,7 @@
 
         loginDialog.close();
         signUpDialog.showModal();
-        signUpForm.elements.username.focus();
+        signUpForm.elements.email.focus();
       });
 
       signUpDialog.querySelector("[data-cancel]")

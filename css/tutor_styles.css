@@ -934,3 +934,41 @@
     button { height: 38px; }
     #messageInput { min-height: 38px; }
   }
+/* ========= Global button hover (no motion) ========= */
+
+button {
+  transition: background 0.2s ease,
+              filter 0.2s ease,
+              opacity 0.2s ease;
+}
+
+/* Hover: only on devices with a real pointer (avoids "sticky" hover on phones) */
+@media (hover: hover) and (pointer: fine) {
+  button:not(:disabled):hover {
+    filter: brightness(1.12);
+  }
+}
+
+/* Keyboard accessibility */
+button:focus-visible {
+  outline: 3px solid var(--primary-color);
+  outline-offset: 2px;
+}
+
+/* These buttons define their own `transition`, which would override the one above.
+   Re-declaring it here lets the brightness change fade smoothly. */
+.att-item .att-remove,
+.draw-action-btn,
+.draw-color-btn,
+.draw-tool-btn {
+  transition: background 0.2s ease,
+              filter 0.2s ease,
+              opacity 0.2s ease,
+              border-color 0.2s ease,
+              box-shadow 0.2s ease;
+}
+
+/* Quiz submit already darkens its background on hover, so skip the brightness change */
+.quiz-submit-results:hover:not(:disabled) {
+  filter: none;
+}
