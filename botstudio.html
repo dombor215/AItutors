@@ -1,0 +1,1042 @@
+<!DOCTYPE html><html lang="en"><head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Bot Studio</title>
+<style>
+:root{
+  --bg:#f3f5fa;--panel:#fff;--panel2:#f8fafd;--text:#1d2433;--muted:#667085;--line:#e3e8f0;
+  --accent:#4f6bed;--accent-ink:#fff;--ok:#12a150;--warn:#d97706;--danger:#d92d20;
+  --shadow:0 1px 2px rgba(16,24,40,.06),0 4px 14px rgba(16,24,40,.06);
+  --mono:ui-monospace,SFMono-Regular,Menlo,Consolas,"Liberation Mono",monospace;
+  --t-h:#1d4ed8;--t-b:#b45309;--t-i:#7c3aed;--t-code:#0f766e;--t-link:#2563eb;--t-mark:#db2777;
+  --t-com:#8a94a6;--t-str:#0f766e;--t-kw:#7c3aed;--t-num:#b45309;--t-prop:#1d4ed8;
+}
+[data-theme=dark]{
+  --bg:#12151c;--panel:#1a1e28;--panel2:#202533;--text:#e6e9f0;--muted:#98a2b3;--line:#2e3445;
+  --accent:#7b93ff;--accent-ink:#0b1020;--shadow:0 1px 2px rgba(0,0,0,.4);
+  --t-h:#7aa2ff;--t-b:#f5b25c;--t-i:#c4a1ff;--t-code:#5eead4;--t-link:#7dd3fc;--t-mark:#f472b6;
+  --t-com:#707b91;--t-str:#5eead4;--t-kw:#c4a1ff;--t-num:#f5b25c;--t-prop:#7aa2ff;
+}
+*{box-sizing:border-box}
+html,body{height:100%;margin:0}
+body{font:14px/1.45 system-ui,-apple-system,"Segoe UI",Roboto,sans-serif;background:var(--bg);color:var(--text)}
+button{font:inherit;color:inherit;cursor:pointer}
+code,.mono{font-family:var(--mono)}
+.muted{color:var(--muted)}
+.pad{padding:12px}
+[hidden]{display:none!important}
+
+#app{display:flex;height:100vh}
+#sidebar{width:260px;flex:none;background:var(--panel);border-right:1px solid var(--line);display:flex;flex-direction:column;padding:12px;gap:10px;overflow:hidden;transition:width .18s ease,padding .18s ease}
+.side-head{display:flex;align-items:center;gap:8px}
+.brand{flex:1;font-weight:700;font-size:16px;padding:4px;white-space:nowrap;overflow:hidden}
+.icon-btn{padding:4px 10px;line-height:1.2;flex:none}
+.side-actions{display:flex;gap:6px}
+.side-actions #btnNew{flex:1}
+#botList{flex:1;min-height:0;overflow:auto;display:flex;flex-direction:column;gap:2px;border-radius:8px}
+#botList.drop{outline:2px dashed var(--accent);outline-offset:-2px}
+.bot,.folder{display:flex;align-items:center;gap:4px;padding:7px 8px;padding-left:calc(8px + var(--d,0) * 14px);border-radius:8px;cursor:pointer}
+.folder{font-weight:600}
+.bot:hover,.folder:hover{background:var(--panel2)}
+.folder.sel{background:color-mix(in srgb,var(--accent) 7%,transparent)}
+.bot.active{background:color-mix(in srgb,var(--accent) 15%,transparent);font-weight:600}
+.bot.drop,.folder.drop{outline:2px dashed var(--accent);outline-offset:-2px;background:color-mix(in srgb,var(--accent) 12%,transparent)}
+#botList.dragging .bot>*,#botList.dragging .folder>*{pointer-events:none}
+.bot-name{flex:1;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.folder .caret{width:12px;flex:none;color:var(--muted);font-size:11px}
+.folder .count{font-size:11px;font-weight:400;color:var(--muted);background:var(--line);border-radius:99px;padding:0 7px}
+.bot .icon,.folder .icon{opacity:0;border:0;background:none;padding:2px 4px;border-radius:6px}
+.bot:hover .icon,.folder:hover .icon{opacity:.7}
+.bot .icon:hover,.folder .icon:hover{opacity:1;background:var(--line)}
+.side-foot{display:flex;flex-direction:column;gap:6px;border-top:1px solid var(--line);padding-top:10px;margin-top:auto}
+
+/* collapsed sidebar = slim icon rail */
+#app.side-collapsed #sidebar{width:60px;padding:12px 8px}
+#app.side-collapsed .brand,#app.side-collapsed .lbl,#app.side-collapsed #botList,#app.side-collapsed #btnNewFolder{display:none}
+#app.side-collapsed .icon-btn{flex:1}
+#app.side-collapsed #sidebar .btn{padding-left:0;padding-right:0;text-align:center}
+
+.btn{border:1px solid var(--line);background:var(--panel);padding:6px 12px;border-radius:8px;white-space:nowrap}
+.btn:hover{background:var(--panel2)}
+.btn.primary{background:var(--accent);color:var(--accent-ink);border-color:transparent;font-weight:600}
+.btn.primary:hover{filter:brightness(1.07)}
+.btn.primary:disabled{opacity:.45;cursor:default;filter:none}
+.btn.small{padding:2px 8px;font-size:12px}
+.btn.ghost{background:none}
+.btn.active{border-color:var(--accent);color:var(--accent)}
+.btn.danger{color:var(--danger)}
+.inp{width:100%;padding:7px 10px;border:1px solid var(--line);border-radius:8px;background:var(--panel);color:var(--text);font:inherit}
+.inp:focus,.ovl:focus-within{outline:2px solid color-mix(in srgb,var(--accent) 45%,transparent);outline-offset:0}
+.inp.bad{border-color:var(--danger)}
+.inp.narrow{width:80px}
+.inp:disabled{opacity:.6}
+
+#main{flex:1;display:flex;flex-direction:column;min-width:0}
+#topbar{display:flex;align-items:center;gap:10px;padding:10px 16px;background:var(--panel);border-bottom:1px solid var(--line);flex-wrap:wrap}
+#curName{font-size:16px;font-weight:700}
+.badge{font-size:11px;padding:1px 8px;border-radius:99px;background:var(--line);color:var(--muted)}
+.badge.tpl{background:#fde7c7;color:#8a4b00}
+.spacer{flex:1}
+.seg{display:inline-flex;border:1px solid var(--line);border-radius:8px;overflow:hidden}
+.seg button{border:0;background:var(--panel);padding:5px 11px;border-right:1px solid var(--line)}
+.seg button:last-child{border:0}
+.seg button.on{background:var(--accent);color:var(--accent-ink)}
+.chip-switch{display:inline-flex;align-items:center;gap:7px;padding:4px 10px;border:1px solid var(--line);border-radius:8px;cursor:pointer;user-select:none}
+.chip-switch.on{background:#fff3e0;border-color:var(--warn);color:#8a4b00}
+#dirtyDot{color:var(--warn)}
+
+#workspace{flex:1;display:flex;min-height:0}
+#editorPane{flex:0 0 50%;min-width:320px;display:flex;flex-direction:column;min-height:0}
+#divider{width:7px;cursor:col-resize;background:var(--line);flex:none}
+#divider:hover,.dragging #divider{background:var(--accent)}
+#previewPane{flex:1;min-width:260px;display:flex;flex-direction:column;background:var(--panel)}
+.dragging iframe{pointer-events:none}
+.dragging{user-select:none}
+.view-editor #previewPane,.view-editor #divider{display:none}
+.view-editor #editorPane{flex:1}
+.view-preview #editorPane,.view-preview #divider{display:none}
+.no-bot #workspace,.no-bot .needs-bot{display:none!important}
+#empty{display:none;margin:60px auto;max-width:520px;text-align:center}
+.no-bot #empty{display:block}
+
+#tabs{display:flex;gap:2px;padding:8px 12px 0;border-bottom:1px solid var(--line);background:var(--panel);overflow-x:auto}
+#tabs button{border:0;background:none;padding:8px 14px;border-bottom:2px solid transparent;color:var(--muted);white-space:nowrap}
+#tabs button.on{color:var(--text);border-color:var(--accent);font-weight:600}
+.pane{display:none;flex:1;min-height:0;overflow:auto;padding:16px}
+.pane.on{display:block}
+.pane.raw.on{display:flex;flex-direction:column;padding:0}
+
+.search{margin-bottom:14px}
+.sec{margin-bottom:22px}
+.sec>h3{margin:0 0 4px;font-size:12px;letter-spacing:.08em;color:var(--muted)}
+.sec>.secdesc{margin:0 0 10px;color:var(--muted);white-space:pre-wrap;font-size:13px}
+.card{background:var(--panel);border:1px solid var(--line);border-radius:12px;padding:12px 14px;margin-bottom:10px;box-shadow:var(--shadow)}
+.card h3{margin:0 0 6px;font-size:15px}
+.var-head{display:flex;align-items:center;gap:12px;justify-content:space-between}
+.var-label{font-weight:600}
+.var-name{font-size:11px;color:var(--muted)}
+.var-desc{color:var(--muted);font-size:13px;margin:4px 0 8px;white-space:pre-wrap}
+details.orig{margin-top:8px;font-size:12px;color:var(--muted)}
+details.orig pre{margin:6px 0 0;padding:8px;background:var(--panel2);border-radius:8px;white-space:pre-wrap;font-family:var(--mono)}
+.row{display:flex;gap:8px;align-items:center}
+.note{margin-top:8px;padding:8px 10px;border-radius:8px;background:#fff3e0;color:#8a4b00;font-size:13px}
+.note.warn{background:#fdecea;color:#912018}
+.thumb{height:44px;max-width:160px;border-radius:6px;border:1px solid var(--line);background:repeating-conic-gradient(#ddd 0 25%,#fff 0 50%) 50%/12px 12px}
+
+.switch{position:relative;display:inline-block;width:42px;height:24px;flex:none}
+.switch input{opacity:0;width:0;height:0}
+.switch span{position:absolute;inset:0;background:#c5ccd8;border-radius:99px;transition:.15s;cursor:pointer}
+.switch span::before{content:"";position:absolute;width:18px;height:18px;left:3px;top:3px;background:#fff;border-radius:50%;transition:.15s;box-shadow:0 1px 3px rgba(0,0,0,.3)}
+.switch input:checked+span{background:var(--ok)}
+.switch input:checked+span::before{transform:translateX(18px)}
+.switch input:focus-visible+span{outline:2px solid var(--accent)}
+
+/* overlay editor */
+.ovl{border:1px solid var(--line);border-radius:10px;background:var(--panel);overflow:hidden;display:flex;flex-direction:column}
+.ovl-bar{display:flex;align-items:center;gap:10px;padding:5px 10px;background:var(--panel2);border-bottom:1px solid var(--line);font-size:12px}
+.ovl-title{font-weight:600;font-family:var(--mono)}
+.ovl-count{margin-left:auto;color:var(--muted)}
+.ovl-body{position:relative;resize:vertical;overflow:hidden;min-height:90px;height:260px}
+.ovl-pre,.ovl-ta{position:absolute;inset:0;margin:0;padding:12px 14px;border:0;font:13px/1.6 var(--mono);letter-spacing:0;
+  white-space:pre-wrap;overflow-wrap:anywhere;tab-size:4;overflow-x:hidden;overflow-y:scroll;box-sizing:border-box}
+.ovl-pre{pointer-events:none;color:var(--text)}
+.ovl-pre code{font:inherit}
+.ovl-ta{background:transparent;color:transparent;-webkit-text-fill-color:transparent;caret-color:var(--text);resize:none;outline:none}
+.ovl-ta::selection{background:rgba(79,107,237,.3);-webkit-text-fill-color:transparent}
+.ovl.max{position:fixed;inset:0;z-index:200;border-radius:0;border:0;background:var(--panel)}
+.ovl.max .ovl-body{flex:1;height:auto;resize:none;width:min(1100px,100%);margin:0 auto}
+.ovl.fill{flex:1;border:0;border-radius:0;min-height:0}
+.ovl.fill .ovl-body{flex:1;height:auto;resize:none}
+.t-h{color:var(--t-h);font-weight:inherit}.t-b{color:var(--t-b)}.t-i{color:var(--t-i)}
+.t-code{color:var(--t-code)}.t-link{color:var(--t-link)}.t-mark{color:var(--t-mark)}.t-tag{color:var(--t-com)}
+.t-com{color:var(--t-com)}.t-str{color:var(--t-str)}.t-kw{color:var(--t-kw)}.t-num{color:var(--t-num)}.t-prop{color:var(--t-prop)}
+
+/* colours */
+.crow{display:grid;grid-template-columns:minmax(120px,170px) 40px 56px 1fr 46px auto;gap:10px;align-items:center;padding:6px 0;border-top:1px solid var(--line)}
+.crow:first-of-type{border-top:0}
+.crow.plain{grid-template-columns:minmax(120px,170px) 1fr}
+.cpick{width:40px;height:30px;padding:0;border:1px solid var(--line);border-radius:6px;background:none;cursor:pointer}
+.calpha{width:100%}
+.sw{display:block;width:100%;height:26px;border-radius:6px;border:1px solid var(--line);overflow:hidden;background:repeating-conic-gradient(#ccc 0 25%,#fff 0 50%) 50%/10px 10px}
+.sw i{display:block;height:100%;background:var(--c)}
+.strip{grid-column:1/-1;display:flex;flex-wrap:wrap;gap:6px;padding:4px 0}
+.chip{width:24px;height:24px;border-radius:6px;border:1px solid var(--line);padding:0}
+.chip:hover{transform:scale(1.15)}
+.gprev{height:70px;border-radius:10px;display:flex;align-items:center;padding:0 16px;color:#fff;font-weight:600;margin:8px 0;border:1px solid var(--line)}
+
+/* preview */
+#pvBar{display:flex;align-items:center;gap:10px;padding:8px 12px;border-bottom:1px solid var(--line);flex-wrap:wrap;font-size:13px}
+#pvBar label{display:inline-flex;gap:5px;align-items:center;cursor:pointer}
+#pvUrl{color:var(--muted);font-family:var(--mono);font-size:12px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;flex:1;min-width:60px}
+#frame{flex:1;border:0;background:#fff;width:100%}
+
+dialog{border:1px solid var(--line);border-radius:14px;background:var(--panel);color:var(--text);padding:20px;width:min(440px,92vw);box-shadow:0 20px 60px rgba(0,0,0,.3)}
+dialog::backdrop{background:rgba(10,15,30,.45)}
+dialog h3{margin:0 0 6px}
+.dlg-actions{display:flex;justify-content:flex-end;gap:8px;margin-top:14px}
+.dlg-sel{display:block;margin-top:10px}
+.dlg-sel>span{display:block;font-size:12px;margin-bottom:3px}
+#dlgErr{color:var(--danger);font-size:13px;margin-top:6px;min-height:1em}
+#toasts{position:fixed;right:16px;bottom:16px;display:flex;flex-direction:column;gap:8px;z-index:500}
+.toast{background:#1d2433;color:#fff;padding:9px 14px;border-radius:10px;box-shadow:0 6px 20px rgba(0,0,0,.25);max-width:380px}
+.toast.err{background:var(--danger)}.toast.ok{background:var(--ok)}
+</style>
+</head>
+<body>
+<div id="app">
+  <aside id="sidebar">
+    <div class="side-head">
+      <button class="btn ghost icon-btn" id="btnCollapse" aria-controls="botList" aria-expanded="true" title="Collapse sidebar (Ctrl+B)">«</button>
+      <div class="brand">🤖 Bot Studio</div>
+    </div>
+    <div class="side-actions">
+      <button class="btn primary" id="btnNew" title="New chatbot"><span class="ico">＋</span><span class="lbl"> New chatbot</span></button>
+      <button class="btn" id="btnNewFolder" title="New folder">📁＋</button>
+    </div>
+    <div id="botList"></div>
+    <div class="side-foot">
+      <button class="btn" id="btnTemplate" title="Edit the template that new bots are copied from"><span class="ico">🧬</span><span class="lbl"> Edit template</span></button>
+      <button class="btn ghost" id="btnTheme" title="Light / dark"><span class="ico">🌓</span><span class="lbl"> Light / dark</span></button>
+      <button class="btn ghost danger" id="btnQuit" title="Stop server"><span class="ico">⏻</span><span class="lbl"> Stop server</span></button>
+    </div>
+  </aside>
+
+  <section id="main" class="no-bot">
+    <header id="topbar" class="needs-bot">
+      <span id="curName"></span><span class="badge" id="curBadge" hidden=""></span>
+      <button class="btn small" id="btnRenameFolder" title="Rename this chatbot's folder">✏ Rename</button>
+      <button class="btn small" id="btnMove" title="Move this chatbot to another folder">📂 Move</button>
+      <button class="btn small" id="btnRenameCfg" title="Rename the config .js file (and update index.html)">✏ Config file</button>
+      <span class="spacer"></span>
+      <label class="chip-switch" id="testChip" title="Empties POCKETBASE_URL while testing; the real URL is kept in a comment" hidden="">
+        <span class="switch"><input type="checkbox" id="testSwitch"><span></span></span> 🧪 Test mode (no PocketBase)
+      </label>
+      <div class="seg" id="viewSeg">
+        <button data-view="editor">Editor</button><button data-view="split">Split</button><button data-view="preview">Preview</button>
+      </div>
+      <span id="dirtyDot" title="Unsaved changes" hidden="">●</span>
+      <button class="btn primary" id="btnSave" disabled="" title="Ctrl+S">💾 Save</button>
+    </header>
+
+    <div id="empty">
+      <h2>Welcome to Bot Studio</h2>
+      <p class="muted">Pick a chatbot on the left, or create a new one. A new bot is a copy of the <code>template</code> folder.</p>
+      <p class="note warn" id="noTemplate" hidden="">No <code>template</code> folder with an index.html was found next to botstudio.pyw.</p>
+    </div>
+
+    <div id="workspace" class="view-split">
+      <section id="editorPane">
+        <nav id="tabs">
+          <button data-tab="settings">⚙ Settings</button>
+          <button data-tab="style">🎨 Style</button>
+          <button data-tab="cfg" id="tabCfg">config_data.js</button>
+          <button data-tab="css">custom.css</button>
+        </nav>
+        <div class="pane" id="paneSettings"></div>
+        <div class="pane" id="paneStyle"></div>
+        <div class="pane raw" id="paneCfg"></div>
+        <div class="pane raw" id="paneCss"></div>
+      </section>
+      <div id="divider" title="Drag to resize"></div>
+      <section id="previewPane">
+        <div id="pvBar">
+          <button class="btn small" id="pvReload">⟳ Reload</button>
+          <button class="btn small" id="pvTab">↗ New tab</button>
+          <label title="Reload the preview after every save"><input type="checkbox" id="pvAuto"> Refresh on save</label>
+          <label title="Push unsaved CSS into the preview while you type"><input type="checkbox" id="pvLive"> Live CSS</label>
+          <span id="pvUrl"></span>
+        </div>
+        <iframe id="frame" title="Preview"></iframe>
+      </section>
+    </div>
+  </section>
+</div>
+
+<dialog id="dlg"><form method="dialog">
+  <h3 id="dlgTitle"></h3><p class="muted" id="dlgMsg"></p>
+  <input class="inp" id="dlgInput" autocomplete="off" spellcheck="false">
+  <label class="dlg-sel" id="dlgSelWrap" hidden><span class="muted" id="dlgSelLabel"></span><select class="inp" id="dlgSelect"></select></label>
+  <div id="dlgErr"></div>
+  <div class="dlg-actions"><button class="btn" value="cancel" formnovalidate="">Cancel</button><button class="btn primary" value="ok" id="dlgOk">OK</button></div>
+</form></dialog>
+<div id="toasts"></div>
+
+<script>
+"use strict";
+const TOKEN = "__STUDIO_TOKEN__";
+const $ = (s, r = document) => r.querySelector(s);
+const enc = encodeURIComponent;
+const encPath = p => p.split("/").map(enc).join("/");
+const dirname = p => p.includes("/") ? p.slice(0, p.lastIndexOf("/")) : "";
+const basename = p => p.slice(p.lastIndexOf("/") + 1);
+
+/* ------------------------------------------------------------------ helpers */
+function h(tag, attrs, ...kids) {
+  const el = document.createElement(tag);
+  for (const [k, v] of Object.entries(attrs || {})) {
+    if (v === false || v == null) continue;
+    if (k === "class") el.className = v;
+    else if (k.startsWith("on")) el.addEventListener(k.slice(2), v);
+    else if (k === "html") el.innerHTML = v;
+    else el.setAttribute(k, v === true ? "" : v);
+  }
+  for (const c of kids.flat(Infinity)) if (c != null && c !== false) el.append(c.nodeType ? c : document.createTextNode(c));
+  return el;
+}
+function toast(msg, kind = "") {
+  const t = h("div", { class: "toast " + kind }, msg);
+  $("#toasts").append(t);
+  setTimeout(() => t.remove(), kind === "err" ? 7000 : 2500);
+}
+async function api(path, body) {
+  const opt = { headers: { "X-Studio-Token": TOKEN } };
+  if (body !== undefined) { opt.method = "POST"; opt.headers["Content-Type"] = "application/json"; opt.body = JSON.stringify(body); }
+  const r = await fetch(path, opt);
+  let data = {}; try { data = await r.json(); } catch {}
+  if (!r.ok) throw new Error(data.error || r.statusText);
+  return data;
+}
+const prefs = Object.assign({ autoRefresh: true, liveCss: true, view: "split", split: 50, theme: "", last: "", sideCollapsed: false, closed: [] },
+  (() => { try { return JSON.parse(localStorage.getItem("botstudio.prefs") || "{}"); } catch { return {}; } })());
+if (!Array.isArray(prefs.closed)) prefs.closed = [];
+const savePrefs = () => localStorage.setItem("botstudio.prefs", JSON.stringify(prefs));
+const NAME_RE = /^[A-Za-z0-9][A-Za-z0-9_-]{0,63}$/;
+
+function ask({ title, message = "", value = null, ok = "OK", danger = false, validate, choices = null, choiceLabel = "", choice = "" }) {
+  return new Promise(res => {
+    const d = $("#dlg"), inp = $("#dlgInput"), okb = $("#dlgOk"), err = $("#dlgErr"), sel = $("#dlgSelect");
+    $("#dlgTitle").textContent = title; $("#dlgMsg").textContent = message;
+    inp.hidden = value === null; inp.value = value ?? ""; err.textContent = "";
+    $("#dlgSelWrap").hidden = !choices;
+    if (choices) {
+      $("#dlgSelLabel").textContent = choiceLabel;
+      sel.replaceChildren(...choices.map(c => h("option", { value: c.value }, c.label)));
+      sel.value = choice; if (sel.selectedIndex < 0) sel.selectedIndex = 0;
+    }
+    okb.textContent = ok; okb.classList.toggle("danger", danger);
+    okb.onclick = e => {
+      if (validate && value !== null) { const m = validate(inp.value.trim()); if (m) { e.preventDefault(); err.textContent = m; } }
+    };
+    inp.onkeydown = e => { if (e.key === "Enter") { e.preventDefault(); okb.click(); } };
+    d.addEventListener("close", () => {
+      if (d.returnValue !== "ok") return res(null);
+      const v = value === null ? true : inp.value.trim();
+      res(choices ? { value: v, choice: sel.value } : v);   // with a dropdown: {value, choice}
+    }, { once: true });
+    d.returnValue = ""; d.showModal(); if (value !== null) { inp.focus(); inp.select(); }
+  });
+}
+
+/* ------------------------------------------------------------------ highlighters */
+const esc = s => s.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;");
+const span = (c, s) => `<span class="${c}">${s}</span>`;
+
+function hlMarkdown(src) {
+  let fence = false;
+  const inline = l => l.replace(
+    /(`[^`\n]+`)|(\*\*[^*\n]+\*\*|(?<!\w)__[^_\n]+__(?!\w))|(\*[^*\s][^*\n]*\*|(?<!\w)_[^_\s][^_\n]*_(?!\w))|(\[[^\]\n]*\]\([^)\n]*\))|(&lt;\/?[A-Za-z][^\n]*?&gt;)/g,
+    (s, c, b, i, a) => span(c ? "t-code" : b ? "t-b" : i ? "t-i" : a ? "t-link" : "t-tag", s));
+  return src.split("\n").map(line => {
+    if (/^\s*(`{3}|~{3})/.test(line)) { fence = !fence; return span("t-code", esc(line)); }
+    if (fence) return span("t-code", esc(line));
+    if (/^\s{0,3}#{1,6}\s/.test(line)) return span("t-h", esc(line));
+    if (/^\s{0,3}([-*_])(\s*\1){2,}\s*$/.test(line)) return span("t-mark", esc(line));
+    const l = esc(line);
+    const m = /^(\s*)((?:&gt;\s?)+|[-*+]\s|\d+[.)]\s)/.exec(l);
+    return m ? m[1] + span("t-mark", m[2]) + inline(l.slice(m[0].length)) : inline(l);
+  }).join("\n") + "\n";
+}
+function hlCss(src) {
+  return esc(src).replace(
+    /(\/\*[\s\S]*?\*\/)|("[^"\n]*"|'[^'\n]*')|(#[0-9a-fA-F]{3,8}\b)|(--[\w-]+)|(@[\w-]+)|(\b[a-z-]+)(?=\s*:)|(\b\d*\.?\d+(?:px|em|rem|%|deg|vh|vw|s|ms)?\b)/g,
+    (s, com, str, hex, v, at, prop, num) => span(com ? "t-com" : str ? "t-str" : hex ? "t-num" : v ? "t-kw" : at ? "t-kw" : prop ? "t-prop" : "t-num", s)) + "\n";
+}
+function hlJs(src) {
+  return esc(src).replace(
+    /(\/\/[^\n]*)|("(?:\\.|[^"\\\n])*"|'(?:\\.|[^'\\\n])*'|`(?:\\[\s\S]|[^`\\])*`)|\b(const|let|var|true|false|null)\b|(\b\d+(?:\.\d+)?\b)/g,
+    (s, com, str, kw) => span(com ? "t-com" : str ? "t-str" : kw ? "t-kw" : "t-num", s)) + "\n";
+}
+
+/* ------------------------------------------------------------------ overlay editor (textarea over highlighted <pre>) */
+function overlayEditor({ value, hl, label = "", onInput, fill = false, height = 260, actions = [], counter = true }) {
+  const title = h("span", { class: "ovl-title" }, label), count = h("span", { class: "ovl-count" });
+  const maxBtn = h("button", { class: "btn small ghost", type: "button", title: "Maximise (Esc to close)" }, "⤢ Maximise");
+  const code = h("code"), pre = h("pre", { class: "ovl-pre", "aria-hidden": "true" }, code);
+  const ta = h("textarea", { class: "ovl-ta", spellcheck: "false", autocomplete: "off" });
+  const body = h("div", { class: "ovl-body", style: fill ? null : `height:${height}px` }, pre, ta);
+  const bar = h("div", { class: "ovl-bar" }, title,
+    actions.map(a => h("button", { class: "btn small ghost", type: "button", onclick: a.fn }, a.text)), count, maxBtn);
+  const root = h("div", { class: "ovl" + (fill ? " fill" : "") }, bar, body);
+  const sync = () => { pre.scrollTop = ta.scrollTop; pre.scrollLeft = ta.scrollLeft; };
+  const render = () => {
+    const v = ta.value; code.innerHTML = hl(v);
+    if (counter) { const w = (v.trim().match(/\S+/g) || []).length;
+      count.textContent = `${v.length.toLocaleString()} chars · ${w.toLocaleString()} words · ~${Math.ceil(v.length / 4).toLocaleString()} tokens`; }
+    sync();
+  };
+  const toggle = on => {
+    const m = on ?? !root.classList.contains("max");
+    root.classList.toggle("max", m); maxBtn.textContent = m ? "⤡ Restore (Esc)" : "⤢ Maximise"; ta.focus(); sync();
+  };
+  ta.addEventListener("input", () => { render(); onInput && onInput(ta.value); });
+  ta.addEventListener("scroll", sync);
+  maxBtn.addEventListener("click", () => toggle());
+  root.addEventListener("keydown", e => { if (e.key === "Escape" && root.classList.contains("max")) { e.stopPropagation(); toggle(false); } });
+  ta.value = value; render();
+  return { el: root, ta, setValue(v) { if (ta.value !== v) { ta.value = v; render(); } } };
+}
+
+/* ------------------------------------------------------------------ config_data.js parser / writer */
+function unescapeJs(s) {
+  return s.replace(/\\(u\{([0-9a-fA-F]+)\}|u([0-9a-fA-F]{4})|x([0-9a-fA-F]{2})|\r?\n|[\s\S])/g, (m, a, u1, u2, x) => {
+    if (u1) return String.fromCodePoint(parseInt(u1, 16));
+    if (u2) return String.fromCharCode(parseInt(u2, 16));
+    if (x) return String.fromCharCode(parseInt(x, 16));
+    if (a === "\n" || a === "\r\n") return "";
+    return ({ n: "\n", t: "\t", r: "\r", b: "\b", f: "\f", v: "\v", "0": "\0" })[a] ?? a;
+  });
+}
+function encodeString(v, quote) {
+  if (quote !== "`" && /[\n\r]/.test(v)) quote = "`";
+  if (quote === "`")
+    return "`" + v.replace(/\\/g, () => "\\\\").replace(/`/g, () => "\\`").replace(/\$\{/g, () => "\\${") + "`";
+  let s = v.replace(/\\/g, () => "\\\\");
+  s = quote === '"' ? s.replace(/"/g, () => '\\"') : s.replace(/'/g, () => "\\'");
+  return quote + s + quote;
+}
+function readLiteral(t, i) {
+  const q = t[i];
+  if (q === '"' || q === "'" || q === "`") {
+    let j = i + 1;
+    while (j < t.length && t[j] !== q) j += t[j] === "\\" ? 2 : 1;
+    const end = Math.min(j + 1, t.length);
+    let le = t.indexOf("\n", end); if (le < 0) le = t.length;
+    if (/^\s*;?\s*(\/\/.*)?$/.test(t.slice(end, le))) return { end, kind: "string", quote: q };
+  } else {
+    const rest = t.slice(i, i + 40); let m;
+    if ((m = /^(?:true|false)(?![\w$])/.exec(rest))) return { end: i + m[0].length, kind: "bool" };
+    if ((m = /^-?\d+(?:\.\d+)?(?![\w$.])/.exec(rest))) return { end: i + m[0].length, kind: "number" };
+  }
+  let j = i; while (j < t.length && t[j] !== ";" && t[j] !== "\n") j++;
+  while (j > i && /\s/.test(t[j - 1])) j--;
+  return { end: j, kind: "other" };
+}
+function commentsAbove(t, declStart) {
+  const lines = []; let end = declStart;
+  while (end > 0) {
+    const prevEnd = end - 1, prevStart = t.lastIndexOf("\n", prevEnd - 1) + 1, line = t.slice(prevStart, prevEnd);
+    if (/^\s*\/\/(?!\s*={3,}\s*$)/.test(line)) { lines.unshift(line.replace(/^\s*\/\/ ?/, "")); end = prevStart; } else break;
+  }
+  return { lines, start: end };
+}
+function parseConfig(t) {
+  const decls = [], re = /^[ \t]*(?:export[ \t]+)?const[ \t]+([A-Za-z_$][\w$]*)[ \t]*=[ \t]*/gm;
+  let pos = 0, m;
+  for (;;) {                       // sequential scan: text inside string values is never mistaken for code
+    re.lastIndex = pos; m = re.exec(t); if (!m) break;
+    const start = m.index + m[0].length, lit = readLiteral(t, start);
+    const d = { name: m[1], declStart: m.index, start, end: lit.end, kind: lit.kind, quote: lit.quote || "" };
+    d.raw = t.slice(start, lit.end);
+    d.value = lit.kind === "string" ? unescapeJs(d.raw.slice(1, -1)) : lit.kind === "bool" ? d.raw === "true" : lit.kind === "number" ? Number(d.raw) : d.raw;
+    const c = commentsAbove(t, m.index);
+    d.comments = c.lines.filter(l => !l.startsWith("[studio]")); d.commentStart = c.start;
+    decls.push(d); pos = Math.max(lit.end, start);
+  }
+  const banners = [], bre = /^\/\/[ \t]*={5,}[ \t]*\n\/\/[ \t]*(.+?)[ \t]*\n\/\/[ \t]*={5,}[ \t]*$/gm;
+  while ((m = bre.exec(t))) {
+    const bi = m.index;
+    if (decls.some(d => bi > d.start && bi < d.end)) continue;     // "banner" inside a string value
+    banners.push({ title: m[1], index: bi, end: bi + m[0].length });
+  }
+  const sections = []; let cur = null;
+  for (const d of decls) {
+    let b = null; for (const x of banners) if (x.index < d.declStart) b = x;
+    if (!cur || cur.banner !== b) {
+      cur = { title: b ? b.title : "General", banner: b, vars: [], desc: "" }; sections.push(cur);
+      if (b) cur.desc = t.slice(b.end, d.commentStart).split("\n").map(l => l.trim()).filter(l => l.startsWith("//"))
+        .map(l => l.replace(/^\/\/ ?/, "")).join("\n").trim();
+    }
+    cur.vars.push(d);
+  }
+  return { decls, sections };
+}
+const getDecl = name => parseConfig(S.config).decls.find(d => d.name === name);
+function replaceDecl(t, name, newRaw) {
+  const d = parseConfig(t).decls.find(x => x.name === name);
+  return d ? t.slice(0, d.start) + newRaw + t.slice(d.end) : t;
+}
+
+/* PocketBase test mode: value emptied, original kept in a marker comment right above the line */
+const TEST_RE = /^[ \t]*\/\/ \[studio\] test mode: original POCKETBASE_URL = (.*)\n?/m;
+function getTestMode(t) { const m = TEST_RE.exec(t); if (!m) return null; try { return JSON.parse(m[1]); } catch { return ""; } }
+function enableTestMode(t) {
+  const d = parseConfig(t).decls.find(x => x.name === "POCKETBASE_URL"); if (!d) return t;
+  const q = d.quote || '"';
+  const out = t.slice(0, d.start) + encodeString("", q) + t.slice(d.end);
+  const marker = `// [studio] test mode: original POCKETBASE_URL = ${JSON.stringify(String(d.value))}\n`;
+  return out.slice(0, d.declStart) + marker + out.slice(d.declStart);
+}
+function disableTestMode(t) {
+  const orig = getTestMode(t); if (orig === null) return t;
+  t = t.replace(TEST_RE, "");
+  const d = parseConfig(t).decls.find(x => x.name === "POCKETBASE_URL"); if (!d) return t;
+  return t.slice(0, d.start) + encodeString(orig, d.quote || '"') + t.slice(d.end);
+}
+
+/* ------------------------------------------------------------------ plain-language descriptions */
+const META = {
+  tabTitle: { label: "Browser tab title", desc: "The text shown on the browser tab." },
+  headerTitle: { label: "Header title", desc: "Text shown in the coloured bar at the top of the chat. Leave empty for no title." },
+  copyrightText: { label: "Footer / copyright text", desc: "Small text shown at the bottom of the page, e.g. which model powers the bot." },
+  headerImageUrl: { label: "Header image", kind: "image", desc: "Picture shown at the right side of the header. Needs a direct image link (see below)." },
+  API_URL: { label: "AI endpoint URL", desc: "Address the chat sends its questions to: an AI provider or your own proxy (e.g. a Cloudflare Worker). It must allow requests from this page." },
+  MODEL_NAME: { label: "Model name", desc: "The exact model identifier the provider should use." },
+  API_FIRST_PART: { label: "API key (first part)", secret: true, desc: "Without PocketBase: combined with the key the student types in.\nWith PocketBase: the complete key for your AI endpoint, and the “Insert key” button disappears.\n⚠ Anyone who opens the page's source can read this value." },
+  POCKETBASE_URL: { label: "PocketBase address", kind: "pb", desc: "Leave empty for standalone mode (conversations saved manually as JSON). Enter your PocketBase address, without a trailing slash, to enable student login and database storage." },
+  POCKETBASE_USERS_COLLECTION: { label: "PocketBase: users collection", desc: "Name of the PocketBase collection that holds the student accounts." },
+  POCKETBASE_CONVERSATIONS_COLLECTION: { label: "PocketBase: conversations collection", desc: "Name of the PocketBase collection where conversations are stored." },
+  CHAT_ORIGIN: { label: "Activity ID (CHAT_ORIGIN)", desc: "A stable ID for this tutor/activity. Each student's conversations are grouped by it. Use a different ID for a different activity, but keep it when you only change the title." },
+  signUpAllow: { label: "Allow self sign-up", desc: "Students may create their own account (PocketBase mode)." },
+  allowNewChat: { label: "“New conversation” button", desc: "Show the button for starting a fresh conversation." },
+  allowDelete: { label: "Message delete buttons", desc: "Show controls to delete messages. Deleted messages stay in the saved JSON (marked deleted), are hidden and are not sent to the AI again." },
+  allowImport: { label: "Import conversation (JSON)", desc: "Show the button for loading a saved conversation. With PocketBase it creates a new conversation." },
+  allowExport: { label: "Download conversation (JSON)", desc: "Show the button for downloading the conversation." },
+  allowAttachments: { label: "File / image attachments", desc: "Show the controls for attaching files and images." },
+  allowDrawing: { label: "Drawing tool", desc: "Show the drawing tool, independent of file uploads." },
+  showConversationBrowser: { label: "Older-conversation browser", desc: "Show the list of older conversations (PocketBase only). Hiding it does not stop the latest conversation from being restored." },
+  copyPasteProtection: { label: "Copy-paste protection", desc: "Alters pasted text so that copying answers straight from the AI is harder." },
+  FIRST_MESSAGE: { label: "Welcome message", md: true, desc: "The first message students see. Markdown is supported." },
+  CONTENT_USER: { label: "System prompt", md: true, big: true, desc: "The instructions that define the bot's role and behaviour. Use ⤢ Maximise for a comfortable full-screen editor." },
+};
+const prettify = n => n.replace(/_/g, " ").replace(/([a-z])([A-Z])/g, "$1 $2").toLowerCase().replace(/^./, c => c.toUpperCase());
+
+/* ------------------------------------------------------------------ CSS helpers */
+const PRESETS = ["#000000","#ffffff","#64748b","#ef4444","#f97316","#f59e0b","#eab308","#84cc16","#22c55e","#10b981","#14b8a6","#06b6d4",
+  "#0ea5e9","#3b82f6","#6366f1","#8b5cf6","#a855f7","#d946ef","#ec4899","#f43f5e","#d1e7dd","#f5f7fa","#113983","#008339"];
+const ctx = document.createElement("canvas").getContext("2d", { willReadFrequently: true });
+function parseColor(v) {
+  v = (v || "").trim(); let m;
+  if ((m = /^#([0-9a-f]{3,8})$/i.exec(v))) {
+    let x = m[1]; if (x.length === 3 || x.length === 4) x = [...x].map(c => c + c).join("");
+    if (x.length === 6) x += "ff"; if (x.length !== 8) return null;
+    return { r: parseInt(x.slice(0, 2), 16), g: parseInt(x.slice(2, 4), 16), b: parseInt(x.slice(4, 6), 16), a: parseInt(x.slice(6, 8), 16) / 255 };
+  }
+  if (!CSS.supports("color", v)) return null;
+  ctx.clearRect(0, 0, 1, 1); ctx.fillStyle = "#000"; ctx.fillStyle = v; ctx.fillRect(0, 0, 1, 1);
+  const d = ctx.getImageData(0, 0, 1, 1).data; return { r: d[0], g: d[1], b: d[2], a: d[3] / 255 };
+}
+const hx = n => Math.round(n).toString(16).padStart(2, "0");
+const rgbHex = c => "#" + hx(c.r) + hx(c.g) + hx(c.b);
+const toHex = c => rgbHex(c) + (Math.round(c.a * 255) < 255 ? hx(c.a * 255) : "");
+const hexToRgb = s => ({ r: parseInt(s.slice(1, 3), 16), g: parseInt(s.slice(3, 5), 16), b: parseInt(s.slice(5, 7), 16) });
+
+function parseRootVars(css) {
+  const m = /:root\s*\{([^}]*)\}/.exec(css); if (!m) return { vars: [] };
+  const bodyStart = m.index + m[0].indexOf("{") + 1;
+  const masked = m[1].replace(/\/\*[\s\S]*?\*\//g, s => " ".repeat(s.length));
+  const vars = [], re = /(--[\w-]+\s*:\s*)([^;]+?)(\s*;)/g; let x;
+  while ((x = re.exec(masked))) {
+    const vs = bodyStart + x.index + x[1].length;
+    vars.push({ name: x[0].match(/--[\w-]+/)[0], value: x[2], vs, ve: vs + x[2].length });
+  }
+  return { vars };
+}
+function setRootVar(css, name, value) {
+  const v = parseRootVars(css).vars.find(x => x.name === name);
+  return v ? css.slice(0, v.vs) + value + css.slice(v.ve) : css;
+}
+const GRAD_RE = /linear-gradient\(\s*(-?\d+(?:\.\d+)?)deg/;
+const GRAD_FULL = /linear-gradient\((?:[^()]|\([^()]*\))*\)/;
+
+/* ------------------------------------------------------------------ state */
+const S = { bots: [], tree: { folders: [], bots: [] }, folders: [], maxDepth: 5, selFolder: "", dragging: "",
+  hasTemplate: true, current: "", isTemplate: false, configFile: "config_data.js",
+  config: "", css: "", saved: { config: "", css: "" }, tab: "settings", stale: { settings: false, style: false }, refreshGradient: null };
+let rawCfg = null, rawCss = null, liveTimer = 0;
+const frame = $("#frame");
+
+const isDirty = () => !!S.current && (S.config !== S.saved.config || S.css !== S.saved.css);
+function updateDirty() {
+  const d = isDirty();
+  $("#btnSave").disabled = !d; $("#dirtyDot").hidden = !d;
+  document.title = (d ? "● " : "") + "Bot Studio" + (S.current ? " – " + S.current : "");
+}
+function updateTestChip() {
+  const has = !!getDecl("POCKETBASE_URL"), on = getTestMode(S.config) !== null;
+  $("#testChip").hidden = !has && !on; $("#testChip").classList.toggle("on", on); $("#testSwitch").checked = on;
+}
+function afterConfigChange() { rawCfg && rawCfg.setValue(S.config); updateDirty(); updateTestChip(); }
+function commitCss(css) { S.css = css; rawCss && rawCss.setValue(css); updateDirty(); scheduleLive(); S.refreshGradient && S.refreshGradient(); }
+function setVar(name, raw) { S.config = replaceDecl(S.config, name, raw); afterConfigChange(); }
+
+/* ------------------------------------------------------------------ settings tab */
+function fieldCard(v) {
+  const meta = META[v.name] || {}, label = meta.label || prettify(v.name);
+  const comment = v.comments.join("\n").trim();
+  const desc = meta.desc || comment;
+  const card = h("div", { class: "card", "data-search": (v.name + " " + label + " " + desc).toLowerCase() });
+  const head = h("div", { class: "var-head" }, h("div", {}, h("div", { class: "var-label" }, label), h("code", { class: "var-name" }, v.name)));
+  card.append(head);
+  if (desc) card.append(h("div", { class: "var-desc" }, desc));
+  const testVal = v.name === "POCKETBASE_URL" ? getTestMode(S.config) : null;
+
+  if (v.kind === "bool") {
+    head.append(h("label", { class: "switch" }, h("input", { type: "checkbox", checked: v.value, onchange: e => setVar(v.name, e.target.checked ? "true" : "false") }), h("span")));
+  } else if (v.kind === "number") {
+    card.append(h("input", { class: "inp", type: "number", value: v.value, oninput: e => { if (e.target.value !== "" && isFinite(e.target.value)) setVar(v.name, String(Number(e.target.value))); } }));
+  } else if (v.kind === "other") {
+    card.append(h("input", { class: "inp mono", value: v.raw, oninput: e => setVar(v.name, e.target.value) }),
+      h("div", { class: "var-desc" }, "Advanced value (not a plain text/true/false). Edited as raw JavaScript."));
+  } else if (meta.md || v.quote === "`" || /\n/.test(v.value)) {
+    const ed = overlayEditor({ value: v.value, hl: hlMarkdown, label: "Markdown", height: meta.big ? 460 : 220,
+      onInput: val => setVar(v.name, encodeString(val, getDecl(v.name)?.quote || "`")) });
+    card.append(ed.el);
+  } else {
+    const row = h("div", { class: "row" });
+    const inp = h("input", { class: "inp", value: v.value, spellcheck: "false", disabled: testVal !== null,
+      type: meta.secret ? "password" : "text", oninput: e => setVar(v.name, encodeString(e.target.value, getDecl(v.name)?.quote || '"')) });
+    row.append(inp);
+    if (meta.secret) row.append(h("button", { class: "btn small", type: "button", onclick: () => { inp.type = inp.type === "password" ? "text" : "password"; } }, "👁"));
+    card.append(row);
+    if (meta.kind === "image") {
+      const img = h("img", { class: "thumb", src: v.value, alt: "", hidden: !v.value, onerror: e => { e.target.hidden = true; } });
+      inp.addEventListener("input", () => { img.hidden = !inp.value; img.src = inp.value; warn.hidden = !/^https?:\/\/(www\.)?postimg\.cc\//i.test(inp.value); });
+      const warn = h("div", { class: "note warn", hidden: !/^https?:\/\/(www\.)?postimg\.cc\//i.test(v.value) },
+        "This looks like a Postimages page link. Use the “Direct link” (starting with https://i.postimg.cc/…) – otherwise the image will not show.");
+      card.append(h("div", { class: "row", style: "margin-top:8px" }, img,
+        h("a", { href: "https://postimages.org/", target: "_blank", rel: "noopener" }, "Upload an image on Postimages ↗")), warn,
+        h("div", { class: "var-desc" }, "Tip: choose “No expiration” when uploading, or the picture will vanish later."));
+    }
+    if (meta.kind === "pb") {
+      if (testVal !== null) card.append(h("div", { class: "note" }, "🧪 Test mode is ON – the field above is emptied so the bot runs without PocketBase. Stored URL: ",
+        h("code", {}, testVal || "(none)"), " ", h("button", { class: "btn small", type: "button", onclick: toggleTestMode }, "Turn test mode off")));
+      else if (String(v.value).trim()) card.append(h("div", { style: "margin-top:8px" }, h("button", { class: "btn small", type: "button", onclick: toggleTestMode }, "🧪 Switch to test mode (disable PocketBase)")));
+    }
+  }
+  if (meta.desc && comment) card.append(h("details", { class: "orig" }, h("summary", {}, "Original comment from the file"), h("pre", {}, comment)));
+  return card;
+}
+function renderSettings() {
+  const root = $("#paneSettings"), q = root.querySelector(".search")?.value || "";
+  root.innerHTML = "";
+  const search = h("input", { class: "inp search", placeholder: "🔍 Filter settings…", value: q, oninput: () => applyFilter() });
+  root.append(search);
+  const { sections } = parseConfig(S.config);
+  for (const s of sections) {
+    const sec = h("div", { class: "sec" }, h("h3", {}, s.title));
+    if (s.desc) sec.append(h("p", { class: "secdesc" }, s.desc));
+    s.vars.forEach(v => sec.append(fieldCard(v)));
+    root.append(sec);
+  }
+  if (!sections.length) root.append(h("p", { class: "muted" }, "No `const` settings found. Check the config_data.js tab."));
+  function applyFilter() {
+    const f = search.value.trim().toLowerCase();
+    root.querySelectorAll(".sec").forEach(sec => {
+      let any = false;
+      sec.querySelectorAll(".card").forEach(c => { const show = !f || c.dataset.search.includes(f); c.hidden = !show; any ||= show; });
+      sec.hidden = !any;
+    });
+  }
+  applyFilter(); S.stale.settings = false;
+}
+function toggleTestMode() {
+  if (getTestMode(S.config) !== null) S.config = disableTestMode(S.config);
+  else {
+    const d = getDecl("POCKETBASE_URL");
+    if (!d) return toast("No POCKETBASE_URL found in the config.", "err");
+    if (!String(d.value).trim()) return toast("POCKETBASE_URL is already empty – nothing to switch off.");
+    S.config = enableTestMode(S.config);
+  }
+  afterConfigChange(); renderSettings();
+  toast(getTestMode(S.config) !== null ? "Test mode on (remember to save, and to switch it off before deploying)" : "Test mode off – PocketBase URL restored");
+}
+
+/* ------------------------------------------------------------------ style tab */
+function colorRow(v) {
+  const c0 = parseColor(v.value), isColor = c0 && !/var\(/.test(v.value);
+  const name = h("code", { class: "cname" }, v.name);
+  const txt = h("input", { class: "inp mono", value: v.value, spellcheck: "false" });
+  if (!isColor) {
+    txt.oninput = () => { if (txt.value.trim()) commitCss(setRootVar(S.css, v.name, txt.value.trim())); };
+    return h("div", { class: "crow plain" }, name, txt);
+  }
+  const pick = h("input", { type: "color", class: "cpick", value: rgbHex(c0), title: "Colour picker" });
+  const alpha = h("input", { type: "range", class: "calpha", min: 0, max: 100, value: Math.round(c0.a * 100), title: "Transparency" });
+  const apct = h("span", { class: "muted" }, Math.round(c0.a * 100) + "%");
+  const sw = h("span", { class: "sw", style: `--c:${v.value}` }, h("i"));
+  const strip = h("div", { class: "strip", hidden: true }, PRESETS.map(col => h("button", { type: "button", class: "chip", title: col, style: `background:${col}`,
+    onclick: () => apply({ ...hexToRgb(col), a: (parseColor(txt.value) || c0).a }) })));
+  const palBtn = h("button", { type: "button", class: "btn small", onclick: () => { strip.hidden = !strip.hidden; } }, "Palette");
+  function apply(c) {
+    const val = toHex(c);
+    txt.value = val; txt.classList.remove("bad"); pick.value = rgbHex(c); alpha.value = Math.round(c.a * 100);
+    apct.textContent = Math.round(c.a * 100) + "%"; sw.style.setProperty("--c", val);
+    commitCss(setRootVar(S.css, v.name, val));
+  }
+  pick.oninput = () => apply({ ...hexToRgb(pick.value), a: (parseColor(txt.value) || c0).a });
+  alpha.oninput = () => apply({ ...hexToRgb(pick.value), a: alpha.value / 100 });
+  txt.oninput = () => {
+    const p = parseColor(txt.value);
+    if (!p) { txt.classList.add("bad"); return; }
+    txt.classList.remove("bad"); pick.value = rgbHex(p); alpha.value = Math.round(p.a * 100);
+    apct.textContent = Math.round(p.a * 100) + "%"; sw.style.setProperty("--c", txt.value.trim());
+    commitCss(setRootVar(S.css, v.name, txt.value.trim()));
+  };
+  return h("div", { class: "crow" }, name, pick, sw, txt, apct, palBtn, strip, h("div", { style: "grid-column:1/-1;margin-top:-4px" }, alpha));
+}
+function gradientCard() {
+  const card = h("section", { class: "card" }, h("h3", {}, "Header gradient"));
+  const m = GRAD_RE.exec(S.css); S.refreshGradient = null;
+  if (!m) { card.append(h("p", { class: "muted" }, "No “linear-gradient(…deg, …)” found in custom.css. Edit custom.css directly if you want one.")); return card; }
+  const prev = h("div", { class: "gprev" }, "Header preview");
+  const ang = h("input", { type: "range", min: 0, max: 360, value: parseFloat(m[1]), style: "flex:1" });
+  const num = h("input", { type: "number", class: "inp narrow", min: 0, max: 360, value: parseFloat(m[1]) });
+  const refresh = () => {
+    const g = GRAD_FULL.exec(S.css);
+    parseRootVars(S.css).vars.forEach(x => prev.style.setProperty(x.name, x.value));
+    prev.style.backgroundImage = g ? g[0] : "";
+  };
+  const setAngle = val => {
+    ang.value = num.value = val;
+    commitCss(S.css.replace(GRAD_RE, full => full.replace(/(\(\s*)-?[\d.]+/, (mm, p) => p + val)));
+  };
+  ang.oninput = () => setAngle(ang.value); num.oninput = () => { if (num.value !== "") setAngle(num.value); };
+  card.append(h("p", { class: "muted" }, "Direction of the colour blend (used by your header rule)."), prev, h("div", { class: "row" }, "Angle", ang, num, "°"));
+  S.refreshGradient = refresh; refresh(); return card;
+}
+function renderStyle() {
+  const root = $("#paneStyle"); root.innerHTML = "";
+  const card = h("section", { class: "card" }, h("h3", {}, "Colours"),
+    h("p", { class: "muted" }, "Variables from the :root { … } block of custom.css. Use the picker, a palette swatch, the transparency slider – or type any CSS colour (#hex, rgb(), hsl(), name)."));
+  const { vars } = parseRootVars(S.css);
+  if (!vars.length) card.append(h("p", { class: "muted" }, "No :root variables found – edit custom.css in its own tab."));
+  vars.forEach(v => card.append(colorRow(v)));
+  root.append(card, gradientCard(), h("p", { class: "muted" }, "Everything else (fonts, sizes, other rules) lives in the custom.css tab."));
+  S.stale.style = false;
+}
+
+/* ------------------------------------------------------------------ tabs / layout */
+function showTab(t) {
+  S.tab = t;
+  document.querySelectorAll("#tabs button").forEach(b => b.classList.toggle("on", b.dataset.tab === t));
+  const map = { settings: "#paneSettings", style: "#paneStyle", cfg: "#paneCfg", css: "#paneCss" };
+  for (const [k, sel] of Object.entries(map)) $(sel).classList.toggle("on", k === t);
+  if (t === "settings" && S.stale.settings) renderSettings();
+  if (t === "style" && S.stale.style) renderStyle();
+}
+function setView(v) {
+  prefs.view = v; savePrefs();
+  $("#workspace").className = "view-" + v;
+  document.querySelectorAll("#viewSeg button").forEach(b => b.classList.toggle("on", b.dataset.view === v));
+  if (v !== "editor") loadPreview();
+}
+function buildRawEditors() {
+  rawCfg = overlayEditor({ value: S.config, hl: hlJs, fill: true, label: S.configFile,
+    actions: [{ text: "↺ Revert to saved", fn: () => { S.config = S.saved.config; rawCfg.setValue(S.config); S.stale.settings = true; updateDirty(); updateTestChip(); } }],
+    onInput: v => { S.config = v; S.stale.settings = true; updateDirty(); updateTestChip(); } });
+  rawCss = overlayEditor({ value: S.css, hl: hlCss, fill: true, label: "custom.css",
+    actions: [{ text: "↺ Revert to saved", fn: () => { S.css = S.saved.css; rawCss.setValue(S.css); S.stale.style = true; updateDirty(); scheduleLive(); } }],
+    onInput: v => { S.css = v; S.stale.style = true; updateDirty(); scheduleLive(); S.refreshGradient && S.refreshGradient(); } });
+  $("#paneCfg").replaceChildren(rawCfg.el); $("#paneCss").replaceChildren(rawCss.el);
+}
+
+/* ------------------------------------------------------------------ preview */
+const previewUrl = () => `/bots/${encPath(S.current)}/index.html`;
+function loadPreview() {
+  if (!S.current || prefs.view === "editor") return;
+  const u = previewUrl(); $("#pvUrl").textContent = u;
+  if (frame.dataset.url !== u) { frame.dataset.url = u; frame.src = u; }
+}
+function reloadPreview() {
+  if (!S.current || prefs.view === "editor") return;
+  try { frame.contentWindow.location.reload(); } catch { frame.src = previewUrl(); }
+}
+function pushLiveCss() {
+  if (!prefs.liveCss) return;
+  try {
+    const doc = frame.contentDocument; if (!doc || !doc.head) return;
+    let st = doc.getElementById("studio-live-css");
+    if (!st) { st = doc.createElement("style"); st.id = "studio-live-css"; doc.head.appendChild(st); }
+    st.textContent = S.css;
+  } catch {}
+}
+function scheduleLive() { clearTimeout(liveTimer); liveTimer = setTimeout(pushLiveCss, 120); }
+frame.addEventListener("load", () => { if (S.css !== S.saved.css) pushLiveCss(); });
+
+/* ------------------------------------------------------------------ actions */
+/* ---------- sidebar: tree, folders, drag & drop ---------- */
+const countBots = n => n.bots.length + n.folders.reduce((a, f) => a + countBots(f), 0);
+const findFolder = (n, p) => { for (const f of n.folders) { if (f.path === p) return f; const r = findFolder(f, p); if (r) return r; } return null; };
+
+async function refreshList() {
+  const d = await api("/api/bots");
+  S.tree = d.tree; S.maxDepth = d.maxDepth; S.hasTemplate = d.hasTemplate; $("#noTemplate").hidden = d.hasTemplate;
+  S.bots = []; S.folders = [];
+  (function walk(n, level) {
+    for (const f of n.folders) { S.folders.push({ path: f.path, name: f.name, level }); walk(f, level + 1); }
+    S.bots.push(...n.bots);
+  })(S.tree, 1);
+  if (S.selFolder && !S.folders.some(f => f.path === S.selFolder)) S.selFolder = "";
+  renderList();
+}
+function folderChoices(maxLevel = Infinity) {
+  return [{ value: "", label: "📂 (top level)" },
+    ...S.folders.filter(f => f.level <= maxLevel).map(f => ({ value: f.path, label: "\u00A0\u00A0".repeat(f.level - 1) + "📁 " + f.name }))];
+}
+function reveal(folderPath) {          // make sure a folder (and its parents) are expanded
+  let acc = "";
+  for (const p of folderPath.split("/").filter(Boolean)) { acc = acc ? acc + "/" + p : p; prefs.closed = prefs.closed.filter(x => x !== acc); }
+  savePrefs();
+}
+function toggleFolder(path) {
+  prefs.closed = prefs.closed.includes(path) ? prefs.closed.filter(x => x !== path) : [...prefs.closed, path];
+  savePrefs(); renderList();
+}
+function endDrag() {
+  S.dragging = "";
+  const box = $("#botList"); box.classList.remove("dragging", "drop");
+  box.querySelectorAll(".drop").forEach(e => e.classList.remove("drop"));
+}
+function dropTarget(el, folder) {
+  el.addEventListener("dragover", e => {
+    if (!S.dragging) return;
+    e.preventDefault(); e.stopPropagation(); e.dataTransfer.dropEffect = "move"; el.classList.add("drop");
+  });
+  el.addEventListener("dragleave", () => el.classList.remove("drop"));
+  el.addEventListener("drop", e => {
+    if (!S.dragging) return;
+    e.preventDefault(); e.stopPropagation();
+    const p = S.dragging; endDrag(); moveBot(p, folder);
+  });
+}
+function renderList() {
+  const box = $("#botList"); box.innerHTML = "";
+  if (!S.bots.length && !S.folders.length) box.append(h("div", { class: "muted pad" }, "No chatbots yet."));
+  renderLevel(box, S.tree, 0);
+  $("#btnTemplate").classList.toggle("active", S.current === "template");
+}
+function renderLevel(box, node, depth) {
+  for (const f of node.folders) {
+    const open = !prefs.closed.includes(f.path);
+    const row = h("div", { class: "folder" + (f.path === S.selFolder ? " sel" : ""), style: `--d:${depth}`, title: f.path,
+      onclick: () => { S.selFolder = f.path; toggleFolder(f.path); } },
+      h("span", { class: "caret" }, open ? "▾" : "▸"), h("span", {}, open ? "📂" : "📁"),
+      h("span", { class: "bot-name" }, f.name), h("span", { class: "count" }, countBots(f)),
+      h("button", { class: "icon", title: "New chatbot in this folder", onclick: e => { e.stopPropagation(); newBot(f.path); } }, "＋"),
+      f.path.split("/").length < S.maxDepth
+        ? h("button", { class: "icon", title: "New subfolder", onclick: e => { e.stopPropagation(); newFolder(f.path); } }, "📁") : null,
+      h("button", { class: "icon", title: "Delete folder (moves to _trash)", onclick: e => { e.stopPropagation(); deleteFolder(f.path); } }, "🗑"));
+    dropTarget(row, f.path);
+    box.append(row);
+    if (open) renderLevel(box, f, depth + 1);
+  }
+  for (const b of node.bots) {
+    const row = h("div", { class: "bot" + (b.path === S.current ? " active" : ""), style: `--d:${depth}`, title: b.path, draggable: "true",
+      onclick: () => openBot(b.path),
+      ondragstart: e => {
+        S.dragging = b.path; e.dataTransfer.setData("text/plain", b.path); e.dataTransfer.effectAllowed = "move";
+        setTimeout(() => $("#botList").classList.add("dragging"), 0);
+      },
+      ondragend: endDrag },
+      h("span", { class: "bot-name" }, b.name),
+      h("button", { class: "icon", title: "Move to folder…", onclick: e => { e.stopPropagation(); moveDialog(b.path); } }, "➜"),
+      h("button", { class: "icon", title: "Duplicate", onclick: e => { e.stopPropagation(); duplicateBot(b.path); } }, "⧉"),
+      h("button", { class: "icon", title: "Delete (moves to _trash)", onclick: e => { e.stopPropagation(); deleteBot(b.path); } }, "🗑"));
+    dropTarget(row, dirname(b.path));   // dropping on a bot = "put it in this bot's folder"
+    box.append(row);
+  }
+}
+
+/* ---------- open / create / duplicate / delete / rename / move ---------- */
+function clearCurrent() {
+  frame.src = "about:blank"; frame.dataset.url = "";
+  Object.assign(S, { current: "", saved: { config: "", css: "" }, config: "", css: "" });
+  $("#main").classList.add("no-bot"); updateDirty();
+}
+async function confirmDiscard() {
+  if (!isDirty()) return true;
+  return !!(await ask({ title: "Unsaved changes", message: "Discard the unsaved changes of “" + S.current + "”?", ok: "Discard", danger: true }));
+}
+async function openBot(path) {
+  if (path !== S.current && !(await confirmDiscard())) return;
+  try {
+    const d = await api(`/api/bot/${enc(path)}`);
+    Object.assign(S, { current: d.path, isTemplate: d.isTemplate, configFile: d.configFile, config: d.config, css: d.css,
+      saved: { config: d.config, css: d.css }, stale: { settings: false, style: false } });
+    prefs.last = d.path; savePrefs();
+    if (!d.isTemplate) { S.selFolder = dirname(d.path); reveal(S.selFolder); }
+    $("#main").classList.remove("no-bot");
+    $("#curName").textContent = d.isTemplate ? "template" : d.path.split("/").join(" / ");
+    $("#curBadge").hidden = !d.isTemplate; $("#curBadge").textContent = "default for new bots"; $("#curBadge").className = "badge tpl";
+    $("#btnRenameFolder").hidden = d.isTemplate; $("#btnMove").hidden = d.isTemplate;
+    $("#tabCfg").textContent = d.configFile;
+    buildRawEditors(); renderSettings(); renderStyle(); showTab(S.tab);
+    updateDirty(); updateTestChip(); renderList(); loadPreview();
+  } catch (e) { toast(e.message, "err"); }
+}
+async function save() {
+  if (!isDirty()) return true;
+  try {
+    await api(`/api/bot/${enc(S.current)}/save`, { config: S.config, css: S.css });
+    S.saved = { config: S.config, css: S.css }; updateDirty(); toast("Saved ✓", "ok");
+    if (prefs.autoRefresh) reloadPreview();
+    return true;
+  } catch (e) { toast("Save failed: " + e.message, "err"); return false; }
+}
+async function newBot(folder) {
+  if (!(await confirmDiscard())) return;
+  const r = await ask({ title: "New chatbot", message: "Name (letters, digits, - and _). It will be a copy of the template.", value: "", ok: "Create",
+    choices: folderChoices(), choiceLabel: "Folder", choice: typeof folder === "string" ? folder : S.selFolder,
+    validate: v => NAME_RE.test(v) ? "" : "Use 1–64 letters, digits, - or _ (start with a letter or digit)." });
+  if (!r || !r.value) return;
+  try {
+    const res = await api("/api/create", { name: r.value, folder: r.choice });
+    if (r.choice) reveal(r.choice);
+    await refreshList(); S.current = ""; await openBot(res.path); toast("Created “" + r.value + "”", "ok");
+  } catch (e) { toast(e.message, "err"); }
+}
+async function newFolder(parent) {
+  const r = await ask({ title: "New folder", message: "Folders only organise your chatbots (up to " + S.maxDepth + " levels deep).", value: "", ok: "Create",
+    choices: folderChoices(S.maxDepth - 1), choiceLabel: "Create inside", choice: typeof parent === "string" ? parent : S.selFolder,
+    validate: v => NAME_RE.test(v) ? "" : "Use 1–64 letters, digits, - or _ (start with a letter or digit)." });
+  if (!r || !r.value) return;
+  try {
+    const res = await api("/api/folder/create", { parent: r.choice, name: r.value });
+    if (r.choice) reveal(r.choice);
+    S.selFolder = res.path; await refreshList(); toast("Folder “" + r.value + "” created", "ok");
+  } catch (e) { toast(e.message, "err"); }
+}
+async function deleteFolder(path) {
+  const n = findFolder(S.tree, path), c = n ? countBots(n) : 0;
+  const ok = await ask({ title: "Delete folder “" + path + "”?", danger: true, ok: "Move to _trash",
+    message: (c ? `It contains ${c} chatbot${c > 1 ? "s" : ""}. The whole folder, with everything in it, ` : "The folder ") + "is moved to _trash (not erased), so you can still get it back." });
+  if (!ok) return;
+  try {
+    if (S.current.startsWith(path + "/")) clearCurrent();
+    await api("/api/folder/delete", { path });
+    prefs.closed = prefs.closed.filter(x => x !== path && !x.startsWith(path + "/")); savePrefs();
+    if (S.selFolder === path || S.selFolder.startsWith(path + "/")) S.selFolder = "";
+    await refreshList(); toast("Folder moved to _trash");
+  } catch (e) { toast(e.message, "err"); }
+}
+async function moveBot(path, folder) {
+  if (path === "template" || dirname(path) === folder) return;
+  const isCur = path === S.current;
+  if (isCur && !(await save())) return;               // unsaved edits are saved first (like renaming)
+  try {
+    if (isCur) { frame.src = "about:blank"; frame.dataset.url = ""; }
+    const r = await api(`/api/bot/${enc(path)}/move`, { folder });
+    if (folder) reveal(folder);
+    if (isCur) S.current = "";
+    await refreshList();
+    if (isCur) await openBot(r.path);
+    toast("Moved to " + (folder || "top level"), "ok");
+  } catch (e) { toast(e.message, "err"); if (isCur) loadPreview(); }
+}
+async function moveDialog(path) {
+  const r = await ask({ title: "Move “" + basename(path) + "”", message: "Choose the destination folder.", ok: "Move",
+    choices: folderChoices(), choiceLabel: "Destination", choice: dirname(path) });
+  if (r) await moveBot(path, r.choice);
+}
+async function duplicateBot(path) {
+  const nn = await ask({ title: "Duplicate “" + basename(path) + "”", message: "The copy is created in the same folder.", value: basename(path) + "-copy", ok: "Duplicate",
+    validate: v => NAME_RE.test(v) ? "" : "Invalid name." });
+  if (!nn) return;
+  try { const r = await api(`/api/bot/${enc(path)}/duplicate`, { newName: nn }); await refreshList(); await openBot(r.path); }
+  catch (e) { toast(e.message, "err"); }
+}
+async function deleteBot(path) {
+  const ok = await ask({ title: "Delete “" + basename(path) + "”?", message: "The folder is moved to _trash (not erased), so you can still get it back.", ok: "Move to _trash", danger: true });
+  if (!ok) return;
+  try {
+    if (path === S.current) clearCurrent();
+    await api(`/api/bot/${enc(path)}/delete`, {}); await refreshList(); toast("Moved to _trash");
+  } catch (e) { toast(e.message, "err"); }
+}
+async function renameFolder() {
+  if (S.isTemplate) return;
+  const old = basename(S.current);
+  const nn = await ask({ title: "Rename chatbot folder", message: "The preview URL changes too. Unsaved edits are saved first.", value: old, ok: "Rename", validate: v => NAME_RE.test(v) ? "" : "Invalid name." });
+  if (!nn || nn === old) return;
+  if (!(await save())) return;
+  try {
+    frame.src = "about:blank"; frame.dataset.url = "";
+    const r = await api(`/api/bot/${enc(S.current)}/rename`, { newName: nn });
+    S.current = ""; await refreshList(); await openBot(r.path); toast("Renamed ✓", "ok");
+  } catch (e) { toast(e.message, "err"); loadPreview(); }
+}
+async function renameConfig() {
+  const nf = await ask({ title: "Rename config file", message: "The <script src> in this folder's index.html is updated automatically." + (S.isTemplate ? " New bots will use the new name." : " (To change the default for new bots, do this in the template.)"),
+    value: S.configFile, ok: "Rename", validate: v => /^[A-Za-z0-9][A-Za-z0-9_.-]{0,62}\.js$/.test(v) ? "" : "Must end in .js; letters, digits, . - _ only." });
+  if (!nf || nf === S.configFile) return;
+  if (!(await save())) return;
+  try {
+    const r = await api(`/api/bot/${enc(S.current)}/rename-config`, { newFile: nf });
+    S.configFile = r.configFile; $("#tabCfg").textContent = r.configFile; buildRawEditors(); showTab(S.tab);
+    reloadPreview(); toast("Renamed + index.html updated ✓", "ok");
+  } catch (e) { toast(e.message, "err"); }
+}
+
+/* ------------------------------------------------------------------ wiring */
+$("#btnNew").onclick = () => newBot();
+$("#btnNewFolder").onclick = () => newFolder();
+$("#btnMove").onclick = () => { if (S.current && !S.isTemplate) moveDialog(S.current); };
+dropTarget($("#botList"), "");          // dropping on empty list space = top level
+
+function applySidebar() {
+  const c = !!prefs.sideCollapsed, b = $("#btnCollapse");
+  $("#app").classList.toggle("side-collapsed", c);
+  b.textContent = c ? "»" : "«";
+  b.setAttribute("aria-expanded", String(!c));
+  b.title = (c ? "Expand" : "Collapse") + " sidebar (Ctrl+B)";
+}
+function toggleSidebar() { prefs.sideCollapsed = !prefs.sideCollapsed; savePrefs(); applySidebar(); }
+$("#btnCollapse").onclick = toggleSidebar;
+window.addEventListener("keydown", e => { if ((e.ctrlKey || e.metaKey) && !e.shiftKey && !e.altKey && e.key.toLowerCase() === "b") { e.preventDefault(); toggleSidebar(); } });
+$("#btnTemplate").onclick = () => openBot("template");
+$("#btnSave").onclick = save;
+$("#btnRenameFolder").onclick = renameFolder;
+$("#btnRenameCfg").onclick = renameConfig;
+$("#testSwitch").onchange = e => { e.target.checked = !e.target.checked; toggleTestMode(); };   // state is derived from the file
+$("#pvReload").onclick = () => { frame.dataset.url = ""; const wasView = prefs.view; if (wasView !== "editor") loadPreview(); };
+$("#pvTab").onclick = () => S.current && window.open(previewUrl(), "_blank");
+$("#pvAuto").checked = prefs.autoRefresh; $("#pvAuto").onchange = e => { prefs.autoRefresh = e.target.checked; savePrefs(); };
+$("#pvLive").checked = prefs.liveCss; $("#pvLive").onchange = e => { prefs.liveCss = e.target.checked; savePrefs(); if (e.target.checked) pushLiveCss(); else reloadPreview(); };
+document.querySelectorAll("#tabs button").forEach(b => b.onclick = () => showTab(b.dataset.tab));
+document.querySelectorAll("#viewSeg button").forEach(b => b.onclick = () => setView(b.dataset.view));
+$("#btnTheme").onclick = () => { prefs.theme = document.documentElement.dataset.theme === "dark" ? "light" : "dark"; applyTheme(); savePrefs(); };
+function applyTheme() {
+  const t = prefs.theme || (matchMedia("(prefers-color-scheme: dark)").matches ? "dark" : "light");
+  document.documentElement.dataset.theme = t;
+}
+$("#btnQuit").onclick = async () => {
+  if (!(await confirmDiscard())) return;
+  if (!(await ask({ title: "Stop the Bot Studio server?", ok: "Stop server", danger: true }))) return;
+  try { await api("/api/shutdown", {}); } catch {}
+  window.onbeforeunload = null;
+  document.body.innerHTML = '<div style="padding:60px;font:16px system-ui;text-align:center">Server stopped. You can close this tab.<br><span style="color:#888">Start botstudio.pyw again to continue.</span></div>';
+};
+window.addEventListener("keydown", e => { if ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === "s") { e.preventDefault(); save(); } });
+window.onbeforeunload = e => { if (isDirty()) { e.preventDefault(); e.returnValue = ""; } };
+
+/* draggable divider */
+$("#divider").addEventListener("mousedown", e => {
+  e.preventDefault();
+  const ws = $("#workspace"), rect = ws.getBoundingClientRect();
+  ws.classList.add("dragging");
+  const move = ev => { const p = Math.min(80, Math.max(20, (ev.clientX - rect.left) / rect.width * 100)); $("#editorPane").style.flexBasis = p + "%"; prefs.split = p; };
+  const up = () => { ws.classList.remove("dragging"); removeEventListener("mousemove", move); removeEventListener("mouseup", up); savePrefs(); };
+  addEventListener("mousemove", move); addEventListener("mouseup", up);
+});
+
+(async function init() {
+  applyTheme(); applySidebar(); $("#editorPane").style.flexBasis = prefs.split + "%"; setView(prefs.view); showTab("settings");
+  try {
+    await refreshList();
+    if (prefs.last && (prefs.last === "template" ? S.hasTemplate : S.bots.some(b => b.path === prefs.last))) openBot(prefs.last);
+  } catch (e) { toast(e.message, "err"); }
+})();
+</script>
+
+
+</body></html>
